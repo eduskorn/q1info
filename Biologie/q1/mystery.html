@@ -1,0 +1,1280 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Mystery-Board</title>
+<style>
+/* =====================================================================
+   MYSTERY-BOARD · Vorlage v2 · eine Datei für Computer und iPad
+   ===================================================================== */
+:root{
+  --bg:#070b18; --panel:#101527; --line:#2a3450; --muted:#9ca9c7; --ink:#f0f4ff;
+  --cyan:#6ae5ef; --purple:#ba92ff; --mint:#78e6c7; --yellow:#ffd67e; --top:64px;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;background:var(--bg);color:var(--ink);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Arial,sans-serif;-webkit-text-size-adjust:100%}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+input,textarea{-webkit-user-select:text;user-select:text;font:inherit;font-size:16px}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:disabled{cursor:not-allowed}
+:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
+button svg,.box-tab svg,.note-head svg,.fab svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+
+/* ---------- Startprüfung / Fehleranzeige ---------- */
+#startcheck{position:fixed;z-index:999999;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;background:#080d1f;color:#eaf0ff;font:16px/1.6 system-ui,sans-serif;text-align:center}
+#startcheck .sc-box{max-width:600px;padding:28px;border-radius:18px;border:1px solid #7886af;background:#192139}
+#startcheck .sc-icon{font-size:34px;margin-bottom:8px}
+#startcheck strong{font-size:21px}
+#startcheck pre{text-align:left;white-space:pre-wrap;background:#0b1122;border:1px solid #3a4a6e;border-radius:10px;padding:12px;font-size:13px;color:#ffc9c9;max-height:40vh;overflow:auto}
+
+/* ---------- Grundlayout ---------- */
+.app{display:grid;grid-template-rows:var(--top) minmax(0,1fr);height:100vh;height:100dvh}
+.topbar{position:relative;z-index:50;display:flex;align-items:center;gap:10px;padding:0 14px;background:#090d1c;border-bottom:1px solid var(--line);min-width:0;touch-action:manipulation}
+.brand{display:flex;align-items:center;gap:10px;min-width:0;flex:1 1 auto}
+.brand-mark{flex:0 0 34px;height:34px;border-radius:10px;border:1px solid rgba(106,229,239,.5);display:grid;place-items:center;color:var(--cyan);font-size:19px;background:linear-gradient(145deg,rgba(106,229,239,.15),rgba(161,124,255,.08))}
+.brand-text{min-width:0}
+.brand strong{display:block;font-size:14px;font-weight:800;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand small{display:block;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.savestate{font-size:11px;color:#7f93b8;white-space:nowrap;flex:0 0 auto}
+.savestate.warn{color:#ff9aa6;font-weight:700}
+.top-actions{display:flex;gap:6px;flex:0 0 auto}
+.tbtn{display:inline-flex;align-items:center;gap:7px;height:40px;padding:0 12px;border-radius:10px;border:1px solid #354260;background:#161e34;color:#d6e2f8;font-size:13px;font-weight:700;white-space:nowrap}
+.tbtn svg{width:17px;height:17px}
+.tbtn:hover{background:#202b46;border-color:#6585a5}
+.tbtn.primary{background:linear-gradient(115deg,#4b437a,#256580);border-color:#738ed4;color:#fff}
+.tbtn:disabled{opacity:.55}
+#drawerBtn{display:none;background:#23385a;color:#e4f4ff}
+
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);min-height:0;position:relative}
+.sidebar{z-index:20;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;touch-action:pan-y;
+  background:linear-gradient(180deg,#11172b,#0c1121);border-right:1px solid var(--line);scrollbar-color:#394663 transparent}
+.drawer-head{display:none;position:sticky;top:0;z-index:3;align-items:center;justify-content:space-between;padding:10px 12px 10px 20px;background:#18233f;border-bottom:1px solid var(--line);font-weight:800;font-size:14px}
+.side-inner{padding:20px 20px 30px;display:flex;flex-direction:column;gap:18px}
+.eyebrow{font-size:10px;font-weight:850;letter-spacing:.2em;color:var(--cyan);text-transform:uppercase}
+.side-title{font-size:27px;letter-spacing:-.04em;line-height:1.15;font-weight:850;margin:8px 0 8px;overflow-wrap:anywhere}
+.lede{color:#a9b6d4;font-size:13px;line-height:1.6;margin:0}
+.mission{padding:14px;border:1px solid #35405c;border-radius:13px;background:linear-gradient(140deg,rgba(97,86,177,.17),rgba(50,70,111,.08))}
+.mission-head{color:var(--yellow);font-size:11px;letter-spacing:.16em;font-weight:800;margin-bottom:8px}
+.mission strong{font-size:15px;line-height:1.45;display:block}
+.mission p{margin:8px 0 0;font-size:12px;color:#a7b4d0;line-height:1.55}
+.field{display:flex;flex-direction:column;gap:7px}
+.field-label{font-size:10px;letter-spacing:.17em;font-weight:800;color:#97a5c4;text-transform:uppercase}
+.field input,.field textarea{width:100%;background:#0b1122;color:var(--ink);border:1px solid #3a4a6b;border-radius:10px;padding:10px 12px;line-height:1.45}
+.field textarea{resize:vertical;min-height:110px}
+.field input:focus,.field textarea:focus{border-color:#6ae5ef;outline:none}
+.field small{color:#7487aa;font-size:11px}
+.deck-block{display:flex;flex-direction:column;align-items:center;gap:10px}
+.deck-label{align-self:stretch;font-size:10px;letter-spacing:.17em;font-weight:800;color:#97a5c4;display:flex;justify-content:space-between}
+.deck-label b{color:var(--cyan)}
+.deck{position:relative;width:210px;height:150px;border:0;background:none;padding:0;transition:transform .18s;isolation:isolate;filter:drop-shadow(0 15px 25px rgba(0,0,0,.4))}
+.deck:not(:disabled):hover{transform:translateY(-6px)}
+.deck:disabled{opacity:.45}
+.deck::before,.deck::after{content:'';position:absolute;inset:9px;border:1px solid #6778b8;border-radius:13px;background:#1c2344;transform:translate(8px,8px) rotate(5deg)}
+.deck::after{background:#151d3d;transform:translate(3px,4px) rotate(2deg)}
+.deck-face{position:absolute;inset:6px;z-index:2;border-radius:13px;overflow:hidden;border:1px solid #7b83bb;background:radial-gradient(circle at 70% 20%,#50488d 0,transparent 60%),radial-gradient(circle at 20% 80%,#254a62 0,transparent 65%),#1a2445;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.deck-face strong{font-size:11px;letter-spacing:.22em;color:#ddeaff}
+.deck-face small{color:#b9c8e2;font-size:10px;letter-spacing:.06em}
+.deck-caption{color:#c7d7f3;font-size:12px;font-weight:700;text-align:center}
+.count-track{align-self:stretch;height:5px;background:#242f4a;border-radius:20px;overflow:hidden}
+.count-bar{height:100%;width:0;background:linear-gradient(90deg,#48c7d7,#bb8eff);transition:width .25s}
+.shade{display:none}
+
+/* ---------- Arbeitsfläche ---------- */
+.workspace{position:relative;min-width:0;min-height:0;overflow:hidden;background:#090e1e}
+.viewport{position:absolute;inset:0;overflow:hidden;touch-action:none;cursor:default}
+.viewport[data-tool="arrow"],.viewport[data-tool="box"],.viewport[data-tool="info"],.viewport[data-tool="text"]{cursor:crosshair}
+.viewport.space,.viewport.space *{cursor:grab!important}
+.viewport.panning,.viewport.panning *{cursor:grabbing!important}
+.world{position:absolute;left:0;top:0;width:4800px;height:3500px;transform-origin:0 0;background-color:#0b1122;
+  background-image:radial-gradient(circle,rgba(142,157,196,.17) 1px,transparent 1.1px),linear-gradient(90deg,rgba(125,138,180,.045) 1px,transparent 1px),linear-gradient(0deg,rgba(125,138,180,.045) 1px,transparent 1px);
+  background-size:25px 25px,125px 125px,125px 125px}
+#groups,#items,#labels,#createPreview{position:absolute;left:0;top:0;width:4800px;height:3500px;pointer-events:none}
+#groups{z-index:1} #arrows{z-index:2} #items{z-index:3} #labels{z-index:4} #overlay{z-index:5}
+#arrows,#overlay{position:absolute;left:0;top:0;width:4800px;height:3500px;overflow:visible;pointer-events:none}
+#arrows .hit{pointer-events:stroke;cursor:pointer}
+.item{position:absolute;pointer-events:auto;touch-action:none}
+.item.selected{outline:2.5px solid #e9f8ff;outline-offset:4px}
+.item.arrow-start{outline:3px dashed #ffd67e;outline-offset:5px;animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{50%{outline-offset:9px}}
+.item.dragging{filter:drop-shadow(0 18px 24px rgba(0,0,0,.55))}
+
+/* Hinweiskarte: dunkle Karte mit weißem Text */
+.card{width:286px;min-height:100px;padding:18px 20px;border:1px solid #647492;border-radius:11px;background:linear-gradient(145deg,#202a43,#1b243b);box-shadow:0 12px 26px #0008;display:flex;align-items:center;cursor:grab}
+.card p{margin:0;color:#edf2ff;line-height:1.53;font-size:14px;font-weight:550;overflow-wrap:anywhere}
+.card.flash{animation:flash 1.4s ease-out}
+@keyframes flash{0%{box-shadow:0 0 0 0 rgba(106,229,239,.9),0 12px 26px #0008}100%{box-shadow:0 0 0 26px rgba(106,229,239,0),0 12px 26px #0008}}
+
+/* Gruppe: gestrichelter Rahmen mit Reiter oben – liegt HINTER den Karten */
+.box{border:2px dashed var(--c);border-radius:16px;background:var(--f);cursor:grab;transition:background .12s}
+.box.drop{border-style:solid;background:var(--f2)}
+.box-tab{position:absolute;left:12px;top:-16px;max-width:calc(100% - 24px);display:flex;align-items:center;gap:7px;padding:5px 10px 5px 8px;border-radius:9px;background:var(--c);color:#0a1020;font-weight:800;font-size:13.5px;line-height:1.3;box-shadow:0 4px 12px #0006}
+.box-tab svg{width:16px;height:16px;stroke-width:2}
+.box-name{overflow-wrap:anywhere}
+.box-name:empty::before{content:attr(data-ph);opacity:.6;font-style:italic;font-weight:650}
+.box-count{flex:0 0 auto;font-size:11.5px;background:rgba(10,16,32,.2);border-radius:20px;padding:1px 8px}
+.box-count:empty{display:none}
+
+/* Notiz: farbiger Zettel mit dunkler Schrift – liegt ÜBER den Gruppen */
+.note{background:var(--c);color:#0b1122;border-radius:4px 4px 16px 4px;padding:9px 14px 14px;box-shadow:0 10px 22px #0007;cursor:grab}
+.note-head{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;opacity:.55;margin-bottom:5px}
+.note-head svg{width:13px;height:13px;stroke-width:2.2}
+.note-text{font-size:15px;line-height:1.45;font-weight:560;white-space:pre-wrap;overflow-wrap:anywhere}
+.note-text:empty::before{content:attr(data-ph);opacity:.55;font-style:italic}
+
+/* Freier Text: ohne Rahmen */
+.text{padding:6px 8px;border:1px dashed transparent;border-radius:6px;cursor:grab}
+.text:hover{border-color:rgba(233,248,255,.25)}
+.text-body{color:var(--c);font-size:20px;font-weight:760;line-height:1.3;white-space:pre-wrap;overflow-wrap:anywhere}
+.text-body:empty::before{content:attr(data-ph);opacity:.6;font-weight:500;font-style:italic;font-size:15px}
+
+.resize{display:none;position:absolute;right:-10px;bottom:-10px;width:22px;height:22px;border-radius:50%;background:#e9f8ff;border:3px solid #0b1122;cursor:nwse-resize;box-shadow:0 2px 6px #0008;touch-action:none}
+.item.selected .resize{display:block}
+
+/* Pfeilbeschriftung */
+.alabel{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;touch-action:none;max-width:230px;padding:4px 11px;border-radius:999px;background:#0b1122;border:1.5px solid var(--c);color:#f0f4ff;font-size:12.5px;font-weight:700;line-height:1.3;text-align:center;overflow-wrap:anywhere;cursor:pointer;box-shadow:0 3px 10px #0009}
+.alabel.selected{box-shadow:0 0 0 3px rgba(233,248,255,.45),0 3px 10px #0009}
+.alabel.ghost{border-style:dashed;color:var(--c);background:rgba(11,17,34,.94);white-space:nowrap}
+#createPreview{z-index:6}
+#createPreview div{position:absolute;border:2px dashed;border-radius:12px}
+
+.starter{position:absolute;z-index:2;top:52%;left:50%;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;text-align:center;width:min(440px,86%);pointer-events:none}
+.starter h2{font-size:24px;letter-spacing:-.03em;margin:16px 0 8px}
+.starter p{font-size:14px;color:#92a5c9;line-height:1.65;margin:0}
+.starter strong{color:var(--cyan)}
+
+/* ---------- Werkzeugleiste ---------- */
+.toolbar{position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:30;display:flex;align-items:stretch;gap:3px;padding:5px;background:rgba(17,23,42,.97);border:1px solid #344361;border-radius:14px;box-shadow:0 12px 30px #05091699;max-width:calc(100% - 20px);overflow-x:auto;scrollbar-width:none;touch-action:pan-x}
+.toolbar::-webkit-scrollbar{display:none}
+.tool{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-width:62px;height:54px;padding:4px 8px;border-radius:10px;border:1px solid transparent;background:transparent;color:#b1bfdc;font-size:11px;font-weight:750;flex:0 0 auto}
+.tool svg{width:21px;height:21px}
+.tool:hover:not(:disabled){background:#273453;color:#fff}
+.tool.active{background:#293c60;border-color:#538bb2;color:#9dedff}
+.tool:disabled{opacity:.32}
+.sep{flex:0 0 1px;background:#34435d;margin:8px 4px}
+.colors{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:0 6px;flex:0 0 auto}
+.colors-row{display:flex;gap:7px}
+.colors span{font-size:11px;font-weight:750;color:#b1bfdc}
+.swatch{width:23px;height:23px;border-radius:50%;border:0;padding:0;background:var(--sw);box-shadow:inset 0 0 0 2px rgba(0,0,0,.25)}
+.swatch.active{outline:2px solid #fff;outline-offset:2px}
+
+/* Kontextleiste: erklärt das Werkzeug ODER zeigt Aktionen für die Auswahl */
+.contextbar{position:absolute;left:50%;top:84px;transform:translateX(-50%);z-index:29;max-width:calc(100% - 20px);display:flex;align-items:center;flex-wrap:wrap;justify-content:center;gap:6px;padding:5px 6px;background:rgba(14,20,37,.95);border:1px solid #2f3b58;border-radius:12px;font-size:13px;color:#a9b8d6;min-height:40px;box-shadow:0 8px 22px #05091677;touch-action:manipulation}
+.ctx-hint{padding:4px 8px;line-height:1.4;text-align:center}
+.ctx-hint b{color:#e6eefc}
+.ctx-title{font-weight:800;color:#e6eefc;padding:0 6px 0 8px;max-width:260px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cbtn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:9px;border:1px solid #3a4867;background:#1a2440;color:#e1ebfb;font-size:13px;font-weight:700;white-space:nowrap}
+.cbtn svg{width:16px;height:16px}
+.cbtn:hover{background:#243256}
+.cbtn.danger{border-color:#7a3d4f;background:#3a1b27;color:#ffc2cc}
+.cbtn.danger:hover{background:#4c2131}
+.cbtn.icon{padding:0 9px}
+
+.fab{position:absolute;left:14px;bottom:14px;z-index:28;display:none;align-items:center;gap:9px;height:50px;padding:0 16px;border-radius:14px;border:1px solid #738ed4;background:linear-gradient(115deg,#4b437a,#256580);color:#fff;font-weight:800;font-size:14px;box-shadow:0 10px 26px #0009}
+.fab svg{width:22px;height:22px}
+.fab:disabled{opacity:.5}
+.zoom{position:absolute;right:14px;bottom:14px;z-index:28;display:flex;align-items:center;gap:5px;padding:5px;background:#11192ee8;border:1px solid #36415e;border-radius:12px;touch-action:manipulation}
+.zoom button{height:36px;min-width:36px;border:0;border-radius:8px;background:#1c2941;color:#d8e9ff;font-size:19px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 8px}
+.zoom button svg{width:17px;height:17px}
+.zoom #zoomLabel{font:700 12px ui-monospace,monospace;min-width:52px;background:transparent;color:#b6c8e8}
+.zoom .fit{font-size:12px;font-weight:750}
+.toast{position:absolute;z-index:60;bottom:78px;left:50%;transform:translateX(-50%) translateY(8px);opacity:0;pointer-events:none;display:flex;align-items:center;gap:12px;background:#24314e;color:#e3efff;border:1px solid #6488ae;padding:9px 12px 9px 16px;border-radius:11px;font-size:13px;box-shadow:0 8px 30px #0007;transition:opacity .2s,transform .2s;max-width:min(560px,92%)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.show.has-action{pointer-events:auto}
+.toast button{flex:0 0 auto;border:1px solid #8fb2dc;background:#35507a;color:#fff;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:800}
+
+/* Tooltip (Maus: Hover · Touch: lange drücken) */
+.tip{position:fixed;z-index:3000;max-width:270px;padding:9px 12px;border-radius:10px;background:#eaf2ff;color:#0b1122;font-size:12.5px;line-height:1.45;font-weight:560;pointer-events:none;box-shadow:0 10px 30px #000a;opacity:0;transition:opacity .12s}
+.tip.show{opacity:1}
+.tip b{font-weight:800}
+.tip kbd{display:inline-block;font:700 11px ui-monospace,monospace;background:#0b1122;color:#eaf2ff;border-radius:4px;padding:1px 5px;margin-left:4px}
+.coarse .tip kbd{display:none}
+
+/* ---------- Dialoge ---------- */
+dialog{border:1px solid #6f86b5;border-radius:16px;background:#111a30;color:var(--ink);padding:24px;width:min(560px,calc(100vw - 24px));max-height:calc(100dvh - 24px);overflow:auto;box-shadow:0 35px 100px #000a}
+dialog::backdrop{background:rgba(2,6,18,.72)}
+dialog.dlg-fallback{position:fixed;inset:0;margin:auto;height:fit-content;z-index:1000;box-shadow:0 0 0 100vmax rgba(2,6,18,.72)}
+dialog h2{margin:0 0 12px;font-size:20px}
+dialog p{color:#b2c2dd;font-size:14px;line-height:1.6;margin:0 0 12px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:16px}
+.dlg-field{display:block;width:100%;background:#0b1122;color:var(--ink);border:1px solid #677998;border-radius:10px;padding:12px 14px;font-size:16px;line-height:1.45}
+.dlg-field:focus{outline:none;border-color:var(--cyan)}
+textarea.dlg-field{min-height:150px;resize:vertical}
+.dlg-hint{font-size:12px!important;color:#7f93b8!important;margin:8px 0 0!important}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.chips:empty{display:none}
+.chip{border:1px solid #4a5b80;background:#1a2440;color:#dce8fb;border-radius:999px;padding:7px 13px;font-size:13.5px;font-weight:650}
+.chip:hover{background:#26345a}
+#helpDialog{width:min(720px,calc(100vw - 24px))}
+#helpDialog h3{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);margin:20px 0 8px}
+#helpDialog table{width:100%;border-collapse:collapse;font-size:13.5px;line-height:1.5}
+#helpDialog td{padding:8px 8px;border-top:1px solid #26324d;vertical-align:top;color:#c3d0e8}
+#helpDialog td:first-child{white-space:nowrap;font-weight:800;color:#eef4ff;width:1%}
+#helpDialog ul{margin:0;padding-left:20px;color:#c3d0e8;font-size:13.5px;line-height:1.65}
+#helpDialog kbd{font:700 11.5px ui-monospace,monospace;background:#22304f;border:1px solid #3d4f78;border-radius:5px;padding:1px 6px;color:#e9f1ff}
+
+/* ---------- Responsiv ---------- */
+@media (max-width:1180px){
+  .layout{grid-template-columns:262px minmax(0,1fr)}
+  .side-inner{padding:16px 16px 26px}
+  .side-title{font-size:23px}
+  .deck{width:180px;height:132px}
+}
+@media (max-width:1000px){ .savestate{display:none} .brand small{display:none} }
+/* Schublade: schmale Fenster und Tablets im Hochformat */
+@media (max-width:899px), (orientation:portrait) and (max-width:1100px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .sidebar{position:fixed;top:var(--top);bottom:0;left:0;width:min(390px,92vw);transform:translateX(-105%);transition:transform .2s ease;z-index:46;box-shadow:20px 0 55px #0009}
+  body.drawer-open .sidebar{transform:none}
+  .drawer-head{display:flex}
+  .shade{display:block;position:fixed;top:var(--top);left:0;right:0;bottom:0;z-index:45;background:#0009;opacity:0;pointer-events:none;transition:opacity .2s}
+  body.drawer-open .shade{opacity:1;pointer-events:auto}
+  #drawerBtn{display:inline-flex}
+  .fab{display:inline-flex}
+  .side-title{font-size:26px}
+  .deck{width:200px;height:144px}
+}
+@media (max-width:720px){
+  .top-actions .tbtn span{display:none}
+  .top-actions .tbtn{padding:0 10px}
+  .brand-mark{display:none}
+  .tool{min-width:52px}
+}
+@media (pointer:coarse){
+  .tbtn{height:44px}
+  .tool{height:58px;min-width:58px;padding:4px 6px}
+  .swatch{width:27px;height:27px}
+  .colors-row{gap:8px}
+  .cbtn{height:42px;padding:0 14px}
+  .contextbar{top:90px}
+  .zoom button{height:44px;min-width:44px}
+  .resize{width:34px;height:34px;right:-16px;bottom:-16px}
+  dialog{margin-top:5vh}
+  .chip{padding:10px 15px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<!-- Sichtbar, wenn JavaScript nicht läuft (z. B. Vorschau in der Dateien-App). Bei Fehlern im Inhaltsblock erscheint hier die Fehlermeldung. -->
+<div id="startcheck" role="alert">
+  <div class="sc-box">
+    <div class="sc-icon">🌐</div>
+    <strong>Mystery-Board: bitte im Browser öffnen</strong>
+    <p>Das ist nur eine Vorschau – hier läuft das interaktive Board nicht.</p>
+    <p>Öffne den Link von deiner Lehrkraft (<strong>https://…github.io/…</strong>) in Safari, Chrome, Edge oder Firefox.</p>
+  </div>
+</div>
+<script>
+window.__boardFail=function(title,details){var o=document.getElementById('startcheck');if(!o)return;var safe=String(details||'').replace(/[&<]/g,function(c){return c==='&'?'&amp;':'&lt;';});o.style.display='flex';o.innerHTML='<div class="sc-box"><div class="sc-icon">⚠️</div><strong>'+title+'</strong><p>Hinweis für die Lehrkraft – bitte den Inhaltsblock der Datei prüfen:</p><pre>'+safe+'</pre></div>';};
+window.addEventListener('error',function(e){if(window.__boardStarted)return;window.__boardFail('Das Mystery konnte nicht starten.',(e.message||'Unbekannter Fehler')+(e.lineno?'\n(Zeile '+e.lineno+')':''));});
+</script>
+
+<div class="app">
+<header class="topbar">
+  <button class="tbtn" id="drawerBtn" data-tip="<b>Aufgabe & Hinweise</b><br>Leitfrage lesen, Namen eintragen, Antwort schreiben."><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span>Aufgabe</span></button>
+  <div class="brand"><div class="brand-mark">▦</div><div class="brand-text"><strong id="brandTitle">Mystery-Board</strong><small id="brandSub">Interaktives Mystery</small></div></div>
+  <span class="savestate" id="saveState" data-tip="Der Arbeitsstand wird automatisch in diesem Browser gespeichert. Für ein anderes Gerät: „Sichern“."></span>
+  <div class="top-actions">
+    <button class="tbtn" id="helpBtn" data-tip="<b>Hilfe</b><br>Alle Werkzeuge und Bedienung erklärt."><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.9-.9 1.6M12 17h.01"/></svg><span>Hilfe</span></button>
+    <button class="tbtn" id="importBtn" data-tip="<b>Öffnen</b><br>Eine gesicherte Board-Datei (.json) laden und weiterarbeiten."><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span>Öffnen</span></button>
+    <button class="tbtn" id="exportBtn" data-tip="<b>Sichern</b> <kbd>Strg+S</kbd><br>Board als Datei (.json) speichern – kann später wieder geöffnet und bearbeitet werden."><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span>Sichern</span></button>
+    <button class="tbtn primary" id="pngBtn" data-tip="<b>Als Bild</b><br>Board als PNG speichern – mit Leitfrage, Namen und Antwort. Zum Abgeben oder Ausdrucken."><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg><span>Als Bild</span></button>
+    <button class="tbtn" id="resetBtn" data-tip="<b>Neu</b><br>Leeres Board mit neu gemischten Karten beginnen."><svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7M20 4v7h-7"/></svg><span>Neu</span></button>
+  </div>
+  <input type="file" id="fileInput" accept="application/json,.json" hidden>
+</header>
+
+<div class="layout">
+<aside class="sidebar" id="sidebar" aria-label="Aufgabe und Hinweise">
+  <div class="drawer-head"><span>Aufgabe & Hinweise</span><button class="tbtn" id="closeDrawer"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>Schließen</button></div>
+  <div class="side-inner">
+    <div>
+      <div class="eyebrow">Digitales Mystery</div>
+      <h1 class="side-title" id="topicTitle">Themenname</h1>
+      <p class="lede" id="topicIntro"></p>
+    </div>
+    <section class="mission"><div class="mission-head">◈ LEITFRAGE</div><strong id="topicQuestion"></strong><p id="topicTask"></p></section>
+    <label class="field"><span class="field-label">Eure Namen</span><input id="teamInput" maxlength="80" placeholder="z. B. Lena, Tim, Aylin" autocomplete="off" spellcheck="false"></label>
+    <section class="deck-block">
+      <div class="deck-label"><span>HINWEISSTAPEL</span><b id="deckCount">0 / 0</b></div>
+      <button class="deck" id="deckButton" aria-label="Einen Hinweis aufdecken" data-tip="<b>Hinweis aufdecken</b><br>Legt die oberste Karte auf das Board.">
+        <span class="deck-face"><svg width="50" height="50" viewBox="0 0 55 55" fill="none" aria-hidden="true"><rect x="15" y="8" width="29" height="36" rx="4" stroke="#83eeef" stroke-width="2"/><rect x="10" y="13" width="29" height="36" rx="4" stroke="#c59fff" stroke-width="2"/><path d="M17 24h14M17 31h12M17 38h8" stroke="#83eeef" stroke-width="2" stroke-linecap="round"/></svg><strong>HINWEISSTAPEL</strong><small id="deckFaceHint">ZUM AUFDECKEN TIPPEN</small></span>
+      </button>
+      <div class="deck-caption" id="deckCaption"></div>
+      <div class="count-track"><div class="count-bar" id="progressBar"></div></div>
+    </section>
+    <label class="field" id="answerField"><span class="field-label">Unsere Antwort auf die Leitfrage</span><textarea id="answerInput" rows="5" maxlength="3000" placeholder="Formuliert hier eure begründete Antwort …"></textarea><small>Erscheint oben im exportierten Bild.</small></label>
+  </div>
+</aside>
+<div class="shade" id="shade"></div>
+
+<main class="workspace">
+  <div class="viewport" id="viewport" data-tool="select" aria-label="Arbeitsfläche">
+    <div class="world" id="world">
+      <div id="groups"></div>
+      <svg id="arrows" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4800 3500"></svg>
+      <div id="items"></div>
+      <div id="labels"></div>
+      <svg id="overlay" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4800 3500"><line id="arrowPreview" stroke-width="2.8" stroke-dasharray="8 6" opacity=".85" visibility="hidden"/></svg>
+      <div id="createPreview"></div>
+    </div>
+    <div class="starter" id="starter">
+      <svg width="64" height="64" viewBox="0 0 53 53" fill="none" aria-hidden="true"><rect x="7" y="9" width="17" height="15" rx="3" stroke="#9df5f5" stroke-width="2"/><rect x="30" y="9" width="16" height="15" rx="3" stroke="#c69cfa" stroke-width="2"/><rect x="18" y="31" width="17" height="15" rx="3" stroke="#9df5f5" stroke-width="2"/><path d="M24 16h6M16 24l9 7M39 24l-11 7" stroke="#8fa7d9" stroke-width="2"/></svg>
+      <h2>Hier entsteht euer Beziehungsnetz.</h2>
+      <p>Deckt über den <strong>Hinweisstapel</strong> die erste Karte auf. Ordnet die Karten, bildet Gruppen und verbindet sie mit beschrifteten Pfeilen.</p>
+    </div>
+  </div>
+
+  <div class="toolbar" role="toolbar" aria-label="Werkzeuge">
+    <button class="tool active" data-tool="select" data-tip="<b>Bewegen</b> <kbd>V</kbd><br>Karten, Gruppen und Notizen verschieben. Einmal tippen bzw. klicken wählt aus. Auf freier Fläche ziehen verschiebt die Ansicht."><svg viewBox="0 0 24 24"><path d="M6 3l12 8.5-6 1.3-2.8 5.7z"/></svg>Bewegen</button>
+    <button class="tool" data-tool="arrow" data-tip="<b>Pfeil</b> <kbd>A</kbd><br>Von einer Karte zur anderen ziehen – oder erst Start-, dann Zielkarte wählen. Danach beschriften."><svg viewBox="0 0 24 24"><path d="M5 19 19 5M10 5h9v9"/></svg>Pfeil</button>
+    <button class="tool" data-tool="box" data-tip="<b>Gruppe</b> <kbd>G</kbd><br>Rahmen für zusammengehörige Karten. Karten hineinziehen – beim Verschieben der Gruppe wandern sie mit."><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" stroke-dasharray="3 2.5"/><rect x="6.5" y="8" width="6" height="4" rx="1"/><rect x="11.5" y="13" width="6" height="4" rx="1"/></svg>Gruppe</button>
+    <button class="tool" data-tool="info" data-tip="<b>Notiz</b> <kbd>N</kbd><br>Farbiger Zettel für eigene Gedanken, Vermutungen oder Fragen."><svg viewBox="0 0 24 24"><path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-5h5"/></svg>Notiz</button>
+    <button class="tool" data-tool="text" data-tip="<b>Text</b> <kbd>T</kbd><br>Freie Überschrift oder Beschriftung direkt auf dem Board – ohne Rahmen."><svg viewBox="0 0 24 24"><path d="M5 6V4h14v2M12 4v16M9 20h6"/></svg>Text</button>
+    <div class="sep"></div>
+    <div class="colors" data-tip="<b>Farbe</b><br>Gilt für neue Elemente und für das gerade ausgewählte Element."><div class="colors-row" id="swatches"></div><span>Farbe</span></div>
+    <div class="sep"></div>
+    <button class="tool" id="undoBtn" data-tip="<b>Rückgängig</b> <kbd>Strg+Z</kbd><br>Letzte Aktion zurücknehmen." disabled><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-4"/></svg>Rückgängig</button>
+    <button class="tool" id="redoBtn" data-tip="<b>Wiederholen</b> <kbd>Strg+Umschalt+Z</kbd><br>Zurückgenommene Aktion wiederherstellen." disabled><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h4"/></svg>Wiederholen</button>
+  </div>
+  <div class="contextbar" id="contextbar" aria-live="polite"></div>
+
+  <button class="fab" id="fab" data-tip="<b>Hinweis aufdecken</b><br>Legt die oberste Karte auf das Board."><svg viewBox="0 0 24 24"><rect x="8" y="3" width="12" height="15" rx="2"/><rect x="4" y="6" width="12" height="15" rx="2"/></svg><span id="fabText">Hinweis aufdecken</span></button>
+  <div class="zoom">
+    <button id="zoomOut" aria-label="Verkleinern" data-tip="Verkleinern <kbd>−</kbd>">−</button>
+    <button id="zoomLabel" data-tip="Auf 100 % zurücksetzen">100%</button>
+    <button id="zoomIn" aria-label="Vergrößern" data-tip="Vergrößern <kbd>+</kbd>">+</button>
+    <button id="fitBtn" class="fit" data-tip="<b>Alles zeigen</b> <kbd>0</kbd><br>Ansicht so einstellen, dass das ganze Board sichtbar ist."><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Alles</button>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</main>
+</div>
+</div>
+<div class="tip" id="tip" role="tooltip"></div>
+
+<dialog id="editDialog">
+  <h2 id="editTitle">Bearbeiten</h2>
+  <input id="editInput" class="dlg-field" autocomplete="off" enterkeyhint="done">
+  <textarea id="editArea" class="dlg-field"></textarea>
+  <div class="chips" id="editChips"></div>
+  <p class="dlg-hint" id="editHint"></p>
+  <div class="dlg-actions"><button class="tbtn" id="editCancel">Abbrechen</button><button class="tbtn primary" id="editSave">Speichern</button></div>
+</dialog>
+
+<dialog id="askDialog">
+  <h2 id="askTitle"></h2>
+  <p id="askText"></p>
+  <input id="askInput" class="dlg-field" autocomplete="off" hidden>
+  <div class="dlg-actions" id="askActions"></div>
+</dialog>
+
+<dialog id="helpDialog">
+  <h2>So funktioniert das Mystery-Board</h2>
+  <p>Deckt die Hinweise nacheinander auf, ordnet sie, bildet Gruppen und verbindet sie mit beschrifteten Pfeilen. Am Ende formuliert ihr eine begründete Antwort auf die Leitfrage.</p>
+  <h3>Werkzeuge</h3>
+  <table>
+    <tr><td>Bewegen <kbd>V</kbd></td><td>Elemente verschieben. Einmal antippen/klicken wählt ein Element aus. Auf <em>freier Fläche</em> ziehen verschiebt die Ansicht.</td></tr>
+    <tr><td>Pfeil <kbd>A</kbd></td><td>Von einer Karte zu einer anderen ziehen – oder erst die Start-, dann die Zielkarte antippen. Danach beschriften: <em>Wie</em> hängen die beiden zusammen?</td></tr>
+    <tr><td>Gruppe <kbd>G</kbd></td><td>Gestrichelter Rahmen mit Namensreiter. Karten hineinziehen; verschiebt man die Gruppe, wandert alles darin mit. Die Zahl im Reiter zeigt, wie viele Hinweise darin liegen.</td></tr>
+    <tr><td>Notiz <kbd>N</kbd></td><td>Farbiger Zettel für eigene Gedanken, Vermutungen oder offene Fragen.</td></tr>
+    <tr><td>Text <kbd>T</kbd></td><td>Freie Überschrift oder Beschriftung ohne Rahmen.</td></tr>
+  </table>
+  <h3>Auswählen, bearbeiten, löschen</h3>
+  <ul>
+    <li>Ein ausgewähltes Element zeigt oben eine Leiste mit <b>Bearbeiten</b>, <b>Löschen</b> und – bei Pfeilen – <b>Umdrehen</b>.</li>
+    <li>Text direkt bearbeiten: am Computer <b>doppelklicken</b>, am iPad das ausgewählte Element <b>noch einmal antippen</b>.</li>
+    <li>Hinweiskarten werden nicht gelöscht, sondern <b>zurück in den Stapel</b> gelegt.</li>
+    <li>Größe ändern: am weißen Punkt unten rechts eines ausgewählten Elements ziehen.</li>
+    <li><b>Rückgängig</b> und <b>Wiederholen</b> nehmen jede Änderung zurück bzw. stellen sie wieder her.</li>
+    <li>Was ein Knopf macht: am Computer mit der Maus darauf zeigen, am iPad den Knopf <b>lange gedrückt halten</b>.</li>
+  </ul>
+  <h3>Ansicht</h3>
+  <ul>
+    <li><b>iPad:</b> mit zwei Fingern verschieben und zoomen.</li>
+    <li><b>Computer:</b> freie Fläche ziehen oder <kbd>Leertaste</kbd> gedrückt halten und ziehen; Mausrad zoomt.</li>
+    <li><b>Alles</b> (unten rechts) zeigt das ganze Board.</li>
+  </ul>
+  <h3>Speichern und Abgeben</h3>
+  <ul>
+    <li>Der Stand wird <b>automatisch</b> in diesem Browser gespeichert.</li>
+    <li><b>Sichern</b> erzeugt eine Datei, mit der ihr auf einem anderen Gerät weiterarbeiten könnt (<b>Öffnen</b>).</li>
+    <li><b>Als Bild</b> erzeugt ein PNG zum Abgeben – mit Leitfrage, euren Namen und eurer Antwort.</li>
+  </ul>
+  <h3>Tastatur</h3>
+  <ul><li><kbd>V</kbd> <kbd>A</kbd> <kbd>G</kbd> <kbd>N</kbd> <kbd>T</kbd> Werkzeuge · <kbd>Entf</kbd> löschen · <kbd>Enter</kbd> bearbeiten · <kbd>Strg+Z</kbd> / <kbd>Strg+Umschalt+Z</kbd> · <kbd>Esc</kbd> abbrechen · <kbd>+</kbd> <kbd>−</kbd> <kbd>0</kbd> Zoom</li></ul>
+  <div class="dlg-actions"><button class="tbtn primary" id="closeHelp">Verstanden</button></div>
+</dialog>
+
+<script>
+'use strict';
+/* =====================================================================
+   PROJEKT-INHALTE: NUR DIESEN BLOCK FÜR EIN NEUES MYSTERY ANPASSEN.
+   Der technische Teil darunter bleibt für alle Mysterys gleich.
+   ===================================================================== */
+
+const KONFIGURATION = {
+  // Eindeutig pro Mystery! Daran hängen Autosave und Dateizuordnung.
+  // Erlaubt: Buchstaben a–z, Ziffern, Bindestrich. Beispiel: 'oekologie-nahrungsnetz-v1'
+  projektId: 'themenname-v1',
+  titel: 'Themenname',
+  untertitel: 'Interaktives Mystery',
+  einleitung: 'Deckt die Hinweise auf und stellt Zusammenhänge her.',
+  leitfrage: 'Hier steht später die Leitfrage.',
+  arbeitsauftrag: 'Ordnet die Hinweise, stellt Verbindungen her und formuliert eine begründete Antwort.',
+
+  antwortfeld: true,            // Feld „Unsere Antwort“ anzeigen (erscheint im PNG)
+  pfeilSofortBeschriften: true, // nach jedem neuen Pfeil direkt nach der Beschriftung fragen
+  // Antipp-Vorschläge beim Beschriften. Leere Liste [] = keine Vorschläge.
+  pfeilVorschlaege: ['führt zu', 'verstärkt (+)', 'schwächt (–)', 'ist Voraussetzung für', 'widerspricht']
+};
+
+// Hinweiskarten: eindeutige id + Text. Keine Überschriften oder Kategorien.
+// Die Reihenfolge wird bei jedem neuen Board gemischt.
+const HINWEISE = [
+  { id: 'H01', body: 'Testhinweis 1' },
+  { id: 'H02', body: 'Testhinweis 2 – ein etwas längerer Hinweis, damit man sieht, wie die Karte mit mehreren Zeilen umgeht.' },
+  { id: 'H03', body: 'Testhinweis 3' },
+  { id: 'H04', body: 'Testhinweis 4' },
+  { id: 'H05', body: 'Testhinweis 5' },
+  { id: 'H06', body: 'Testhinweis 6' }
+];
+
+/* ======================= ENDE DER PROJEKT-INHALTE ======================= */
+
+
+/* ===================== TECHNIK (nicht verändern) ===================== */
+(function(){
+const VERSION='2.0';
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid=()=>'id'+Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4);
+const shuffle=arr=>{const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const alpha=(hex,a)=>`rgba(${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)},${a})`;
+const trunc=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s;
+
+const PALETTE=['#6ae5ef','#ba92ff','#ff8d9e','#ffd67e','#78e6c7'];
+const COLOR_NAMES={'#6ae5ef':'Cyan','#ba92ff':'Lila','#ff8d9e':'Rot','#ffd67e':'Gelb','#78e6c7':'Grün'};
+const W=4800,H=3500,CARD_W=286;
+const COARSE=window.matchMedia&&matchMedia('(pointer: coarse)').matches;
+const TAP=COARSE?'antippen':'anklicken';
+const PH_EDIT=COARSE?'Noch einmal antippen, um zu schreiben':'Doppelklicken, um zu schreiben';
+const TAP_PX=8;                 // Bewegung unter 8 Bildschirmpixeln gilt als Antippen
+const SIZES={box:{minW:260,minH:170,defW:440,defH:300},info:{minW:170,minH:90,defW:240,defH:130},text:{minW:110,minH:40,defW:260,defH:50}};
+const LIMITS={box:60,info:1500,text:300,arrow:80};
+const NAMES={card:'Hinweiskarte',box:'Gruppe',info:'Notiz',text:'Text',arrow:'Pfeil'};
+const TOOLS={
+  select:`<b>Bewegen:</b> Elemente ziehen · ${TAP} = auswählen · freie Fläche ziehen = Ansicht verschieben`,
+  arrow:`<b>Pfeil:</b> von Karte zu Karte ziehen – oder erst Start, dann Ziel ${TAP}`,
+  box:`<b>Gruppe:</b> Rahmen aufziehen oder Fläche ${TAP}. Karten darin wandern beim Verschieben mit.`,
+  info:`<b>Notiz:</b> Zettel aufziehen oder Fläche ${TAP} – für eigene Gedanken`,
+  text:`<b>Text:</b> Stelle ${TAP} oder Feld aufziehen – für Überschriften und Beschriftungen`
+};
+const ICON={
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="m13.5 6.5 4 4"/></svg>',
+  trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M10 3h4M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
+  flip:'<svg viewBox="0 0 24 24"><path d="M4 8h15l-4-4M20 16H5l4 4"/></svg>',
+  back:'<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/></svg>',
+  close:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
+  group:'<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3" stroke-dasharray="3 2.5"/><rect x="6.5" y="8" width="6" height="4" rx="1"/><rect x="11.5" y="13" width="6" height="4" rx="1"/></svg>',
+  note:'<svg viewBox="0 0 24 24"><path d="M4 4h16v11l-5 5H4z"/><path d="M15 20v-5h5"/></svg>'
+};
+
+/* ---------- Inhalt prüfen ---------- */
+function validateContent(){
+  const errs=[];
+  if(typeof KONFIGURATION!=='object'||!KONFIGURATION)errs.push('KONFIGURATION fehlt.');
+  else if(typeof KONFIGURATION.projektId!=='string'||!/^[A-Za-z0-9-]{3,60}$/.test(KONFIGURATION.projektId))errs.push('projektId fehlt oder enthält unerlaubte Zeichen (erlaubt: a–z, 0–9, Bindestrich; 3–60 Zeichen).');
+  if(!Array.isArray(HINWEISE)||!HINWEISE.length)errs.push('HINWEISE ist leer.');
+  else{
+    const seen=new Set();
+    HINWEISE.forEach((h,i)=>{
+      const name=h&&h.id?`„${h.id}“`:`Nr. ${i+1}`;
+      if(!h||typeof h.id!=='string'||!h.id.trim())errs.push(`Hinweis Nr. ${i+1}: id fehlt.`);
+      else if(seen.has(h.id))errs.push(`Hinweis-ID ${name} kommt doppelt vor.`);
+      else seen.add(h.id);
+      if(!h||typeof h.body!=='string'||!h.body.trim())errs.push(`Hinweis ${name}: Text (body) fehlt.`);
+    });
+  }
+  if(errs.length)throw Object.assign(new Error(errs.join('\n')),{content:true});
+}
+
+/* ---------- Zustand ---------- */
+const viewport=$('viewport'),world=$('world'),groupsLayer=$('groups'),arrowSvg=$('arrows'),itemsLayer=$('items'),labelsLayer=$('labels');
+const state={deck:[],cards:[],notes:[],boxes:[],arrows:[],view:{x:0,y:0,scale:1},team:'',answer:'',color:PALETTE[0],tool:'select',selected:null};
+const measured=new Map();      // tatsächliche Größe aus dem DOM (nicht gespeichert)
+const touches=new Map();
+let gesture=null,pinch=null,arrowStart=null,spaceDown=false,lastTap={id:null,t:0},zTop=1;
+
+const allItems=()=>state.boxes.concat(state.cards,state.notes);
+const itemById=id=>id?allItems().find(o=>o.id===id)||null:null;
+const arrowById=id=>id?state.arrows.find(a=>a.id===id)||null:null;
+const hintById=mid=>HINWEISE.find(h=>h.id===mid);
+function dims(o){const m=measured.get(o.id);if(m)return m;return o.type==='card'?{w:CARD_W,h:120}:{w:o.w,h:o.h};}
+function rectOf(o){const d=dims(o);return{x:o.x,y:o.y,w:d.w,h:d.h};}
+function centerOf(o){const r=rectOf(o);return{x:r.x+r.w/2,y:r.y+r.h/2};}
+const inside=(p,r)=>p.x>=r.x&&p.x<=r.x+r.w&&p.y>=r.y&&p.y<=r.y+r.h;
+function containerOf(o,exclude){let best=null,area=Infinity;const c=centerOf(o);for(const b of state.boxes){if(b.id===o.id||(exclude&&exclude.has(b.id)))continue;if(inside(c,b)&&b.w*b.h<area){area=b.w*b.h;best=b;}}return best;}
+function membersOf(box){const list=[];for(const o of state.cards.concat(state.notes))if(inside(centerOf(o),box))list.push(o);for(const b of state.boxes)if(b.id!==box.id&&b.x>=box.x&&b.y>=box.y&&b.x+b.w<=box.x+box.w&&b.y+b.h<=box.y+box.h)list.push(b);return list;}
+const cardsIn=box=>state.cards.filter(c=>inside(centerOf(c),box)).length;
+
+/* ---------- Verlauf: Rückgängig / Wiederholen ---------- */
+const undoStack=[],redoStack=[];
+const snapshot=()=>JSON.stringify({deck:state.deck,cards:state.cards,notes:state.notes,boxes:state.boxes,arrows:state.arrows});
+function restore(s){const d=JSON.parse(s);state.deck=d.deck;state.cards=d.cards;state.notes=d.notes;state.boxes=d.boxes;state.arrows=d.arrows;}
+function commit(before,label){if(before===snapshot())return false;undoStack.push({snap:before,label});if(undoStack.length>150)undoStack.shift();redoStack.length=0;updateUndoButtons();scheduleSave();return true;}
+function change(label,fn){const before=snapshot();fn();return commit(before,label);}
+function stepHistory(from,to,verb){
+  if(gesture||isOpen($('editDialog')))return;
+  const e=from.pop();
+  if(!e){toast(verb==='undo'?'Es gibt nichts mehr rückgängig zu machen.':'Es gibt nichts zum Wiederholen.');return;}
+  to.push({snap:snapshot(),label:e.label});restore(e.snap);
+  cancelArrowStart(true);if(!itemById(state.selected)&&!arrowById(state.selected))state.selected=null;
+  renderAll();scheduleSave();toast((verb==='undo'?'Rückgängig: ':'Wiederholt: ')+e.label);
+}
+const undo=()=>stepHistory(undoStack,redoStack,'undo');
+const redo=()=>stepHistory(redoStack,undoStack,'redo');
+$('undoBtn').addEventListener('click',e=>{undo();if(e.detail)e.currentTarget.blur();});
+$('redoBtn').addEventListener('click',e=>{redo();if(e.detail)e.currentTarget.blur();});
+function updateUndoButtons(){$('undoBtn').disabled=!undoStack.length;$('redoBtn').disabled=!redoStack.length;}
+
+/* ---------- Darstellung ---------- */
+function screenToWorld(cx,cy){const r=viewport.getBoundingClientRect();return{x:(cx-r.left-state.view.x)/state.view.scale,y:(cy-r.top-state.view.y)/state.view.scale};}
+function applyView(){world.style.transform=`translate(${state.view.x}px,${state.view.y}px) scale(${state.view.scale})`;$('zoomLabel').textContent=Math.round(state.view.scale*100)+'%';scheduleSave();}
+function defaultView(){const r=viewport.getBoundingClientRect();return{x:Math.round(r.width/2-1500),y:Math.round(r.height/2-950),scale:1};}
+const sel=o=>state.selected===o.id?' selected':'';
+
+function renderBoard(){
+  const boxes=state.boxes.slice().sort((a,b)=>b.w*b.h-a.w*a.h);
+  groupsLayer.innerHTML=boxes.map(o=>`<div class="item box${sel(o)}" data-id="${esc(o.id)}" style="left:${o.x}px;top:${o.y}px;width:${o.w}px;height:${o.h}px;--c:${o.color};--f:${alpha(o.color,.06)};--f2:${alpha(o.color,.17)}"><div class="box-tab">${ICON.group}<span class="box-name" data-ph="Gruppe ohne Namen">${esc(o.text)}</span><span class="box-count" data-tip="Anzahl der Hinweiskarten in dieser Gruppe"></span></div><span class="resize" data-resize></span></div>`).join('');
+  const items=state.cards.concat(state.notes).sort((a,b)=>(a.z||0)-(b.z||0));
+  itemsLayer.innerHTML=items.map(o=>{
+    if(o.type==='card'){const h=hintById(o.materialId);return h?`<article class="item card${sel(o)}" data-id="${esc(o.id)}" style="left:${o.x}px;top:${o.y}px"><p>${esc(h.body)}</p></article>`:'';}
+    if(o.type==='info')return `<div class="item note${sel(o)}" data-id="${esc(o.id)}" style="left:${o.x}px;top:${o.y}px;width:${o.w}px;min-height:${o.h}px;--c:${o.color}"><div class="note-head">${ICON.note}Notiz</div><div class="note-text" data-ph="${PH_EDIT}">${esc(o.text)}</div><span class="resize" data-resize></span></div>`;
+    return `<div class="item text${sel(o)}" data-id="${esc(o.id)}" style="left:${o.x}px;top:${o.y}px;width:${o.w}px;min-height:${o.h}px;--c:${o.color}"><div class="text-body" data-ph="${PH_EDIT}">${esc(o.text)}</div><span class="resize" data-resize></span></div>`;
+  }).join('');
+  measured.clear();
+  for(const el of document.querySelectorAll('#groups .item,#items .item'))measured.set(el.dataset.id,{w:el.offsetWidth,h:el.offsetHeight});
+  for(const el of groupsLayer.querySelectorAll('.box')){const b=itemById(el.dataset.id);const n=b?cardsIn(b):0;el.querySelector('.box-count').textContent=n?String(n):'';}
+  if(arrowStart)itemEl(arrowStart)?.classList.add('arrow-start');
+}
+const itemEl=id=>document.querySelector(`.item[data-id="${CSS.escape?CSS.escape(id):id}"]`);
+function edgePoint(o,toward){const r=rectOf(o),c={x:r.x+r.w/2,y:r.y+r.h/2},dx=toward.x-c.x,dy=toward.y-c.y;if(Math.abs(dx)+Math.abs(dy)<.001)return c;const t=Math.min((r.w/2+4)/Math.max(.001,Math.abs(dx)),(r.h/2+4)/Math.max(.001,Math.abs(dy)));return{x:c.x+dx*t,y:c.y+dy*t};}
+function hasReverse(a){return a.from.item&&a.to.item&&state.arrows.some(b=>b!==a&&b.from.item===a.to.item&&b.to.item===a.from.item);}
+function arrowGeom(a){
+  const f=a.from.item?itemById(a.from.item):null,t=a.to.item?itemById(a.to.item):null;
+  if((a.from.item&&!f)||(a.to.item&&!t))return null;
+  const fc=f?centerOf(f):a.from,tc=t?centerOf(t):a.to;
+  let p=f?edgePoint(f,tc):{x:fc.x,y:fc.y},q=t?edgePoint(t,fc):{x:tc.x,y:tc.y};
+  if(hasReverse(a)){const ang=Math.atan2(q.y-p.y,q.x-p.x),nx=-Math.sin(ang)*12,ny=Math.cos(ang)*12;p={x:p.x+nx,y:p.y+ny};q={x:q.x+nx,y:q.y+ny};}
+  const ang=Math.atan2(q.y-p.y,q.x-p.x);
+  return{p,q,ang,mid:{x:(p.x+q.x)/2,y:(p.y+q.y)/2}};
+}
+function renderArrows(){
+  let svg='',labels='';
+  for(const a of state.arrows){
+    const g=arrowGeom(a);if(!g)continue;
+    const{p,q,ang,mid}=g,isSel=state.selected===a.id,L=14,Wg=7.5;
+    const bx=q.x-Math.cos(ang)*L,by=q.y-Math.sin(ang)*L;
+    const tri=`${q.x},${q.y} ${bx-Math.sin(ang)*Wg},${by+Math.cos(ang)*Wg} ${bx+Math.sin(ang)*Wg},${by-Math.cos(ang)*Wg}`;
+    svg+=`<g>${isSel?`<line x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" stroke="#e9f8ff" stroke-width="9" stroke-linecap="round" opacity=".28"/>`:''}<line x1="${p.x}" y1="${p.y}" x2="${bx}" y2="${by}" stroke="${a.color}" stroke-width="${isSel?3.6:2.6}" stroke-linecap="round"/><polygon points="${tri}" fill="${a.color}"/><line class="hit" data-arrow="${esc(a.id)}" x1="${p.x}" y1="${p.y}" x2="${q.x}" y2="${q.y}" stroke="transparent" stroke-width="${COARSE?32:20}"/></g>`;
+    if(a.label)labels+=`<div class="alabel${isSel?' selected':''}" data-arrow="${esc(a.id)}" style="left:${mid.x}px;top:${mid.y}px;--c:${a.color}">${esc(a.label)}</div>`;
+    else if(isSel)labels+=`<div class="alabel ghost" data-arrow="${esc(a.id)}" data-action="label" style="left:${mid.x}px;top:${mid.y}px;--c:${a.color}">＋ Beschriften</div>`;
+  }
+  arrowSvg.innerHTML=svg;labelsLayer.innerHTML=labels;
+}
+function renderDeck(){
+  const left=state.deck.length,all=HINWEISE.length,open=all-left;
+  $('deckCount').textContent=`${open} / ${all} aufgedeckt`;
+  $('progressBar').style.width=(open/all*100)+'%';
+  $('deckButton').disabled=!left;$('fab').disabled=!left;
+  $('deckCaption').textContent=left?`Noch ${left} ${left===1?'Karte':'Karten'} verdeckt`:'Alle Hinweise sind aufgedeckt.';
+  $('deckFaceHint').textContent=left?(COARSE?'ZUM AUFDECKEN TIPPEN':'ZUM AUFDECKEN KLICKEN'):'STAPEL LEER';
+  $('fabText').textContent=left?`Hinweis aufdecken · ${left}`:'Alle aufgedeckt';
+  $('starter').style.display=(allItems().length||state.arrows.length)?'none':'flex';
+}
+function renderAll(){renderBoard();renderArrows();applyView();renderDeck();updateContextBar();updateUndoButtons();}
+
+/* ---------- Auswahl & Kontextleiste ---------- */
+function select(id){
+  state.selected=id||null;
+  for(const el of document.querySelectorAll('.item'))el.classList.toggle('selected',el.dataset.id===state.selected);
+  renderArrows();updateContextBar();
+}
+const cbtn=(act,icon,label,cls,tip)=>`<button class="cbtn${cls?' '+cls:''}" data-act="${act}"${tip?` data-tip="${tip}"`:''}>${icon}${label}</button>`;
+function updateContextBar(){
+  const bar=$('contextbar');
+  if(arrowStart){bar.innerHTML=`<span class="ctx-hint"><b>Pfeil:</b> Start gewählt – jetzt das Ziel ${TAP}.</span>${cbtn('cancelArrow',ICON.close,'Abbrechen')}`;return;}
+  const o=itemById(state.selected),a=o?null:arrowById(state.selected);
+  if(!o&&!a){bar.innerHTML=`<span class="ctx-hint">${TOOLS[state.tool]}</span>`;return;}
+  let title,btns;
+  if(a){title='Pfeil'+(a.label?` „${esc(trunc(a.label,26))}“`:'');btns=cbtn('edit',ICON.edit,a.label?'Beschriftung ändern':'Beschriften')+cbtn('flip',ICON.flip,'Umdrehen','','Pfeilrichtung umkehren')+cbtn('delete',ICON.trash,'Löschen','danger','Pfeil löschen <kbd>Entf</kbd>');}
+  else if(o.type==='card'){title='Hinweiskarte';btns=cbtn('delete',ICON.back,'Zurück in den Stapel','','Karte vom Board nehmen und unten in den Stapel legen. Pfeile an der Karte werden entfernt.');}
+  else if(o.type==='box'){title='Gruppe'+(o.text?` „${esc(trunc(o.text,24))}“`:'');btns=cbtn('edit',ICON.edit,'Umbenennen')+cbtn('delete',ICON.trash,'Gruppe löschen','danger','Nur der Rahmen wird gelöscht – die Karten darin bleiben liegen. <kbd>Entf</kbd>');}
+  else{title=NAMES[o.type];btns=cbtn('edit',ICON.edit,'Bearbeiten','',`Text schreiben <kbd>Enter</kbd>`)+cbtn('delete',ICON.trash,'Löschen','danger','<kbd>Entf</kbd>');}
+  bar.innerHTML=`<span class="ctx-title">${title}</span>${btns}<button class="cbtn icon" data-act="deselect" aria-label="Auswahl aufheben" data-tip="Auswahl aufheben <kbd>Esc</kbd>">${ICON.close}</button>`;
+}
+$('contextbar').addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;
+  const act=b.dataset.act,id=state.selected;
+  if(act==='cancelArrow')cancelArrowStart();
+  else if(act==='deselect')select(null);
+  else if(act==='edit')openEditor(id);
+  else if(act==='delete')deleteSelected();
+  else if(act==='flip'){const a=arrowById(id);if(a){change('Pfeil umgedreht',()=>{const t=a.from;a.from=a.to;a.to=t;});renderArrows();toast('Pfeilrichtung umgedreht.');}}
+  if(e.detail)b.blur();
+});
+
+/* ---------- Werkzeuge & Farben ---------- */
+function setTool(t){
+  cancelArrowStart(true);
+  state.tool=t;viewport.dataset.tool=t;
+  if(t!=='select')state.selected=null;
+  for(const b of document.querySelectorAll('[data-tool]'))b.classList.toggle('active',b.dataset.tool===t);
+  select(state.selected);
+}
+for(const b of document.querySelectorAll('button[data-tool]'))b.addEventListener('click',e=>{setTool(b.dataset.tool);if(e.detail)b.blur();});
+$('swatches').innerHTML=PALETTE.map((c,i)=>`<button class="swatch${i?'':' active'}" data-color="${c}" style="--sw:${c}" aria-label="Farbe ${COLOR_NAMES[c]}"></button>`).join('');
+$('swatches').addEventListener('click',e=>{
+  const b=e.target.closest('[data-color]');if(!b)return;
+  state.color=b.dataset.color;
+  for(const s of document.querySelectorAll('.swatch'))s.classList.toggle('active',s===b);
+  const o=itemById(state.selected),a=arrowById(state.selected),target=o&&o.type!=='card'?o:a;
+  if(target&&target.color!==state.color){change('Farbe geändert',()=>{target.color=state.color;});renderAll();}
+  if(e.detail)b.blur();
+});
+
+/* ---------- Karten ziehen ---------- */
+function freeSpot(){
+  const r=viewport.getBoundingClientRect(),c=screenToWorld(r.left+r.width/2,r.top+r.height*.55);
+  const blockers=state.cards.concat(state.notes).map(rectOf),w=CARD_W,h=130,pad=14;
+  const free=(x,y)=>x>=0&&y>=0&&x+w<=W&&y+h<=H&&!blockers.some(b=>x<b.x+b.w+pad&&x+w+pad>b.x&&y<b.y+b.h+pad&&y+h+pad>b.y);
+  const cands=[];
+  for(let i=-4;i<=4;i++)for(let j=-4;j<=4;j++)cands.push({x:c.x-w/2+i*(w+24),y:c.y-h/2+j*(h+22),d:Math.hypot(i*1.3,j)});
+  cands.sort((a,b)=>a.d-b.d);
+  const hit=cands.find(p=>free(p.x,p.y));
+  const n=state.cards.length;
+  return hit||{x:clamp(c.x-w/2+(n%5-2)*30,0,W-w),y:clamp(c.y-h/2+(n%4-1.5)*24,0,H-h)};
+}
+function drawCard(){
+  if(!state.deck.length||gesture)return;
+  cancelArrowStart(true);
+  let card;
+  change('Hinweis aufgedeckt',()=>{const pos=freeSpot();card={type:'card',id:uid(),materialId:state.deck.pop(),x:Math.round(pos.x),y:Math.round(pos.y),z:zTop++};state.cards.push(card);});
+  if(state.tool!=='select')setTool('select');
+  setDrawer(false);renderAll();select(card.id);
+  const el=itemEl(card.id);if(el){el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1500);}
+  if(!state.deck.length)toast('Das war der letzte Hinweis. Jetzt alles ordnen und verbinden!');
+}
+$('deckButton').addEventListener('click',drawCard);
+$('fab').addEventListener('click',drawCard);
+
+/* ---------- Löschen ---------- */
+function deleteSelected(){
+  const id=state.selected;if(!id)return;
+  const o=itemById(id),a=arrowById(id);
+  if(a){change('Pfeil gelöscht',()=>{state.arrows=state.arrows.filter(x=>x.id!==id);});select(null);renderAll();toast('Pfeil gelöscht.',true);return;}
+  if(!o)return;
+  const linked=state.arrows.filter(x=>x.from.item===id||x.to.item===id).length;
+  const extra=linked?` ${linked} ${linked===1?'Pfeil':'Pfeile'} entfernt.`:'';
+  change(o.type==='card'?'Karte zurückgelegt':NAMES[o.type]+' gelöscht',()=>{
+    state.arrows=state.arrows.filter(x=>x.from.item!==id&&x.to.item!==id);
+    if(o.type==='card'){state.cards=state.cards.filter(x=>x.id!==id);state.deck.unshift(o.materialId);}
+    else if(o.type==='box')state.boxes=state.boxes.filter(x=>x.id!==id);
+    else state.notes=state.notes.filter(x=>x.id!==id);
+  });
+  state.selected=null;renderAll();
+  toast((o.type==='card'?'Karte liegt wieder im Stapel.':o.type==='box'?'Gruppe gelöscht – die Karten bleiben liegen.':NAMES[o.type]+' gelöscht.')+extra,true);
+}
+
+/* ---------- Zoom ---------- */
+function zoomTo(next,cx,cy){
+  const r=viewport.getBoundingClientRect(),x=cx==null?r.left+r.width/2:cx,y=cy==null?r.top+r.height/2:cy,wp=screenToWorld(x,y);
+  state.view.scale=clamp(next,.3,2);state.view.x=x-r.left-wp.x*state.view.scale;state.view.y=y-r.top-wp.y*state.view.scale;applyView();
+}
+function contentBounds(){
+  let x1=Infinity,y1=Infinity,x2=-Infinity,y2=-Infinity;
+  const inc=(x,y,w,h)=>{x1=Math.min(x1,x);y1=Math.min(y1,y);x2=Math.max(x2,x+w);y2=Math.max(y2,y+h);};
+  for(const o of allItems()){const r=rectOf(o);inc(r.x,r.y-(o.type==='box'?20:0),r.w,r.h+(o.type==='box'?20:0));}
+  for(const a of state.arrows){const g=arrowGeom(a);if(g){inc(g.p.x,g.p.y,0,0);inc(g.q.x,g.q.y,0,0);}}
+  return Number.isFinite(x1)?{x:x1,y:y1,w:x2-x1,h:y2-y1}:null;
+}
+function fitView(){
+  const b=contentBounds(),r=viewport.getBoundingClientRect();
+  if(!b){state.view=defaultView();applyView();return;}
+  const top=136,m=36,aw=Math.max(100,r.width-m*2),ah=Math.max(100,r.height-top-m-50);
+  const s=clamp(Math.min(aw/b.w,ah/b.h),.3,1.2);
+  state.view={scale:s,x:(r.width-b.w*s)/2-b.x*s,y:top+(ah-b.h*s)/2-b.y*s};applyView();
+}
+$('zoomIn').onclick=()=>zoomTo(state.view.scale*1.18);
+$('zoomOut').onclick=()=>zoomTo(state.view.scale/1.18);
+$('zoomLabel').onclick=()=>zoomTo(1);
+$('fitBtn').onclick=fitView;
+viewport.addEventListener('wheel',e=>{e.preventDefault();zoomTo(state.view.scale*Math.exp(-e.deltaY*(e.ctrlKey?.01:.0015)),e.clientX,e.clientY);},{passive:false});
+viewport.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('gesturestart',e=>e.preventDefault());   // Safari: Seitenzoom verhindern
+
+/* ---------- Zeiger-Steuerung (Maus, Finger, Stift) ---------- */
+function hitTest(el){
+  const a=el.closest&&el.closest('[data-arrow]');if(a)return{kind:'arrow',id:a.dataset.arrow,action:a.dataset.action||null};
+  const it=el.closest&&el.closest('[data-id]');if(it)return{kind:'item',id:it.dataset.id,resize:!!el.closest('[data-resize]')};
+  return null;
+}
+viewport.addEventListener('pointerdown',e=>{
+  if(anyDialogOpen())return;
+  if(e.pointerType==='touch'){
+    touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(touches.size===2){startPinch();e.preventDefault();return;}
+    if(touches.size>2)return;
+  }
+  if(e.pointerType==='mouse'&&e.button!==0&&e.button!==1)return;
+  if(gesture)return;
+  e.preventDefault();
+  const p=screenToWorld(e.clientX,e.clientY),hit=hitTest(e.target);
+  const base={pointerId:e.pointerId,pointerType:e.pointerType,sx:e.clientX,sy:e.clientY,start:p,end:p,moved:false,vx:state.view.x,vy:state.view.y,hit};
+  if(e.button===1||spaceDown){gesture=Object.assign(base,{type:'pan'});viewport.classList.add('panning');return;}
+  const tool=state.tool,o=hit&&hit.kind==='item'?itemById(hit.id):null;
+  if(tool==='arrow'){gesture=Object.assign(base,{type:'arrow',from:o?{item:o.id}:{x:p.x,y:p.y}});return;}
+  if((tool==='box'||tool==='info'||tool==='text')&&(!hit||(o&&o.type==='box'))){gesture=Object.assign(base,{type:'create',kind:tool});return;}
+  if(hit&&hit.kind==='arrow'){gesture=Object.assign(base,{type:'arrowTap',id:hit.id});return;}
+  if(o){
+    const wasSelected=state.selected===o.id;
+    if(!wasSelected)select(o.id);
+    if(hit.resize){const d=dims(o);gesture=Object.assign(base,{type:'resize',id:o.id,from:{w:d.w,h:d.h},before:snapshot(),el:itemEl(o.id)});return;}
+    const members=o.type==='box'?membersOf(o).map(m=>({o:m,x:m.x,y:m.y})):[];
+    const els=new Map();for(const el of document.querySelectorAll('.item'))els.set(el.dataset.id,el);
+    gesture=Object.assign(base,{type:'move',id:o.id,wasSelected,from:{x:o.x,y:o.y},members,els,before:snapshot(),
+      exclude:new Set(o.type==='box'?[o.id].concat(members.filter(m=>m.o.type==='box').map(m=>m.o.id)):[]),
+      startGroup:o.type==='box'?null:containerOf(o)});
+    return;
+  }
+  gesture=Object.assign(base,{type:'pan',deselect:true});
+});
+
+window.addEventListener('pointermove',e=>{
+  if(touches.has(e.pointerId)){touches.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinch){updatePinch();return;}}
+  if(!gesture||e.pointerId!==gesture.pointerId){
+    if(!gesture&&arrowStart&&e.pointerType==='mouse'){const s=itemById(arrowStart);if(s)showArrowPreview(s,screenToWorld(e.clientX,e.clientY));}
+    return;
+  }
+  const g=gesture;
+  if(!g.moved&&Math.hypot(e.clientX-g.sx,e.clientY-g.sy)>TAP_PX){
+    g.moved=true;
+    if(g.type==='arrowTap'){g.type='pan';}
+    if(g.type==='pan')viewport.classList.add('panning');
+    if(g.type==='move'){const el=g.els.get(g.id);if(el)el.classList.add('dragging');}
+    if(g.type==='arrow')cancelArrowStart(true);
+  }
+  if(!g.moved)return;
+  const p=screenToWorld(e.clientX,e.clientY);g.end=p;
+  if(g.type==='pan'){state.view.x=g.vx+e.clientX-g.sx;state.view.y=g.vy+e.clientY-g.sy;applyView();}
+  else if(g.type==='move'){
+    const o=itemById(g.id);if(!o)return;const d=dims(o);
+    const nx=clamp(g.from.x+p.x-g.start.x,0,W-d.w),ny=clamp(g.from.y+p.y-g.start.y,o.type==='box'?20:0,H-d.h);
+    const dx=nx-g.from.x,dy=ny-g.from.y;
+    o.x=Math.round(nx);o.y=Math.round(ny);
+    const el=g.els.get(o.id);if(el){el.style.left=o.x+'px';el.style.top=o.y+'px';}
+    for(const m of g.members){m.o.x=Math.round(m.x+dx);m.o.y=Math.round(m.y+dy);const mel=g.els.get(m.o.id);if(mel){mel.style.left=m.o.x+'px';mel.style.top=m.o.y+'px';}}
+    if(o.type!=='box'){const target=containerOf(o);for(const bel of groupsLayer.children)bel.classList.toggle('drop',!!target&&bel.dataset.id===target.id);}
+    renderArrows();
+  }else if(g.type==='resize'){
+    const o=itemById(g.id);if(!o)return;const S=SIZES[o.type];
+    o.w=Math.round(clamp(g.from.w+p.x-g.start.x,S.minW,W-o.x));o.h=Math.round(clamp(g.from.h+p.y-g.start.y,S.minH,H-o.y));
+    if(g.el){g.el.style.width=o.w+'px';g.el.style[o.type==='box'?'height':'minHeight']=o.h+'px';measured.set(o.id,{w:g.el.offsetWidth,h:g.el.offsetHeight});}
+    renderArrows();
+  }else if(g.type==='arrow'){const f=g.from.item?itemById(g.from.item):null;showArrowPreview(f,p,g.from);}
+  else if(g.type==='create')showCreatePreview(g);
+});
+
+window.addEventListener('pointerup',e=>{
+  if(touches.has(e.pointerId)){touches.delete(e.pointerId);if(pinch){if(touches.size<2)pinch=null;return;}}
+  if(!gesture||e.pointerId!==gesture.pointerId)return;
+  const g=gesture;gesture=null;viewport.classList.remove('panning');hidePreviews();
+  finishGesture(g,e);
+});
+window.addEventListener('pointercancel',e=>{
+  touches.delete(e.pointerId);if(touches.size<2)pinch=null;
+  if(!gesture||e.pointerId!==gesture.pointerId)return;
+  const g=gesture;gesture=null;viewport.classList.remove('panning');hidePreviews();
+  if((g.type==='move'||g.type==='resize')&&g.moved)commit(g.before,g.type==='move'?NAMES[itemById(g.id)?.type||'card']+' verschoben':'Größe geändert');
+  renderAll();
+});
+
+function finishGesture(g,e){
+  const now=Date.now(),lt=lastTap;lastTap={id:null,t:0};   // Doppelklick zählt nur bei zwei direkt aufeinanderfolgenden Klicks
+  if(g.type==='pan'){if(!g.moved&&g.deselect)select(null);return;}
+  if(g.type==='arrowTap'){
+    const was=state.selected===g.id;select(g.id);
+    const dbl=lt.id===g.id&&now-lt.t<450;lastTap={id:g.id,t:now};
+    if(g.hit&&g.hit.action==='label'||(g.pointerType==='mouse'?dbl:was))openEditor(g.id);
+    return;
+  }
+  if(g.type==='move'){
+    const o=itemById(g.id);if(!o)return;
+    for(const bel of groupsLayer.children)bel.classList.remove('drop');
+    if(!g.moved){
+      const dbl=lt.id===o.id&&now-lt.t<450;lastTap={id:o.id,t:now};
+      if(o.type!=='card'&&(g.pointerType==='mouse'?dbl:g.wasSelected)){lastTap={id:null,t:0};openEditor(o.id);}
+      return;
+    }
+    if(o.type!=='box')o.z=zTop++;
+    commit(g.before,NAMES[o.type]+' verschoben');
+    if(o.type!=='box'){
+      const after=containerOf(o),before=g.startGroup;
+      if((after&&after.id)!==(before&&before.id)){
+        if(after)toast(after.text?`In Gruppe „${trunc(after.text,30)}“ abgelegt.`:'In die Gruppe abgelegt.');
+        else toast('Aus der Gruppe herausgenommen.');
+      }
+    }
+    renderAll();return;
+  }
+  if(g.type==='resize'){if(g.moved)commit(g.before,'Größe geändert');renderAll();return;}
+  if(g.type==='arrow'){finishArrow(g,e);return;}
+  if(g.type==='create'){
+    const S=SIZES[g.kind];let x,y,w,h;
+    if(g.moved){x=Math.min(g.start.x,g.end.x);y=Math.min(g.start.y,g.end.y);w=Math.max(S.minW,Math.abs(g.end.x-g.start.x));h=Math.max(S.minH,Math.abs(g.end.y-g.start.y));}
+    else{w=S.defW;h=S.defH;x=g.start.x-(g.kind==='text'?12:w/2);y=g.start.y-(g.kind==='box'?30:g.kind==='text'?h/2:h/2);}
+    x=Math.round(clamp(x,0,W-w));y=Math.round(clamp(y,g.kind==='box'?20:0,H-h));w=Math.round(w);h=Math.round(h);
+    const o={type:g.kind,id:uid(),x,y,w,h,text:'',color:state.color};
+    if(g.kind!=='box')o.z=zTop++;
+    change(NAMES[g.kind]+' erstellt',()=>{(g.kind==='box'?state.boxes:state.notes).push(o);});
+    setTool('select');renderAll();select(o.id);openEditor(o.id,{isNew:true});
+  }
+}
+function finishArrow(g,e){
+  const endHit=hitTest(document.elementFromPoint(e.clientX,e.clientY)||document.body);
+  const endItem=endHit&&endHit.kind==='item'?itemById(endHit.id):null;
+  if(!g.moved){
+    // Antipp-Modus: erst Start, dann Ziel
+    if(!arrowStart){
+      if(g.hit&&g.hit.kind==='arrow'){select(g.hit.id);if(g.hit.action==='label')openEditor(g.hit.id);return;}
+      if(!endItem){toast(`Zuerst eine Karte als Start ${TAP} – oder direkt von Karte zu Karte ziehen.`);return;}
+      arrowStart=endItem.id;state.selected=null;renderBoard();renderArrows();updateContextBar();return;
+    }
+    const start=arrowStart;
+    if(!endItem){cancelArrowStart();toast('Pfeil abgebrochen.');return;}
+    if(endItem.id===start){cancelArrowStart();toast('Start wieder aufgehoben.');return;}
+    cancelArrowStart(true);createArrow({item:start},{item:endItem.id});return;
+  }
+  const to=endItem?{item:endItem.id}:{x:g.end.x,y:g.end.y};
+  if(endItem&&g.from.item===endItem.id){toast('Den Pfeil bis zu einer anderen Karte ziehen.');return;}
+  if(!endItem&&!g.from.item&&Math.hypot(g.end.x-g.start.x,g.end.y-g.start.y)<30)return;
+  createArrow(g.from,to);
+}
+function createArrow(from,to){
+  if(from.item&&to.item&&state.arrows.some(a=>a.from.item===from.item&&a.to.item===to.item)){toast('Diese Verbindung gibt es schon.');return;}
+  const a={id:uid(),from,to,color:state.color,label:''};
+  change('Pfeil gezeichnet',()=>{state.arrows.push(a);});
+  renderAll();select(a.id);
+  if(KONFIGURATION.pfeilSofortBeschriften!==false)openEditor(a.id,{isNew:true});
+  else toast('Pfeil gezeichnet – oben auf „Beschriften“ tippen.');
+}
+function cancelArrowStart(silent){
+  if(!arrowStart)return;
+  const el=itemEl(arrowStart);if(el)el.classList.remove('arrow-start');
+  arrowStart=null;hidePreviews();updateContextBar();
+}
+const preview=$('arrowPreview'),createPrev=$('createPreview');
+function showArrowPreview(fromItem,p,fromPoint){
+  const s=fromItem?edgePoint(fromItem,p):fromPoint||p;
+  preview.setAttribute('x1',s.x);preview.setAttribute('y1',s.y);preview.setAttribute('x2',p.x);preview.setAttribute('y2',p.y);
+  preview.setAttribute('stroke',state.color);preview.setAttribute('visibility','visible');
+}
+function showCreatePreview(g){
+  const S=SIZES[g.kind],x=Math.min(g.start.x,g.end.x),y=Math.min(g.start.y,g.end.y);
+  const w=Math.max(S.minW,Math.abs(g.end.x-g.start.x)),h=Math.max(S.minH,Math.abs(g.end.y-g.start.y));
+  createPrev.innerHTML=`<div style="left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-color:${state.color};background:${alpha(state.color,g.kind==='info'?.35:.08)}"></div>`;
+}
+function hidePreviews(){preview.setAttribute('visibility','hidden');createPrev.innerHTML='';}
+
+function startPinch(){
+  if(gesture){
+    const g=gesture;gesture=null;viewport.classList.remove('panning');hidePreviews();
+    if((g.type==='move'||g.type==='resize')&&g.moved){commit(g.before,g.type==='move'?'Element verschoben':'Größe geändert');}
+    renderAll();
+  }
+  const [a,b]=[...touches.values()],mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  pinch={dist:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),scale:state.view.scale,world:screenToWorld(mid.x,mid.y)};
+}
+function updatePinch(){
+  if(!pinch||touches.size<2)return;
+  const [a,b]=[...touches.values()],r=viewport.getBoundingClientRect(),mid={x:(a.x+b.x)/2,y:(a.y+b.y)/2};
+  state.view.scale=clamp(pinch.scale*Math.max(1,Math.hypot(a.x-b.x,a.y-b.y))/pinch.dist,.3,2);
+  state.view.x=mid.x-r.left-pinch.world.x*state.view.scale;state.view.y=mid.y-r.top-pinch.world.y*state.view.scale;applyView();
+}
+
+/* ---------- Dialoge ---------- */
+const HAS_DIALOG=typeof HTMLDialogElement==='function'&&typeof document.createElement('dialog').showModal==='function';
+let dialogOpenedAt=0,lastPointerType='mouse';
+document.addEventListener('pointerdown',e=>{lastPointerType=e.pointerType;},true);
+const isOpen=d=>d.hasAttribute('open');
+const anyDialogOpen=()=>Array.prototype.some.call(document.querySelectorAll('dialog'),isOpen);
+function openDlg(d){dialogOpenedAt=lastPointerType==='mouse'?0:Date.now();hideTip();if(isOpen(d))return;if(HAS_DIALOG)d.showModal();else{d.setAttribute('open','');d.classList.add('dlg-fallback');}}
+function closeDlg(d){if(!isOpen(d))return;const fa=document.activeElement;if(fa&&d.contains(fa))fa.blur();if(HAS_DIALOG)d.close();else{d.removeAttribute('open');d.dispatchEvent(new Event('close'));}}
+// Fokus darf nicht in einem geschlossenen Dialog hängen bleiben (sonst greifen Tastenkürzel nicht)
+for(const d of document.querySelectorAll('dialog'))d.addEventListener('close',()=>{const a=document.activeElement;if(!isOpen(d)&&a&&d.contains(a))a.blur();});
+// iPad: der „Geister-Klick“ nach dem Antippen darf keinen Dialogknopf auslösen
+document.addEventListener('click',e=>{if(Date.now()-dialogOpenedAt<450&&e.target.closest&&e.target.closest('dialog')&&!e.target.closest('input,textarea')){e.preventDefault();e.stopPropagation();}},true);
+
+let editing=null;
+function openEditor(id,opts){
+  const isNew=!!(opts&&opts.isNew);
+  if(anyDialogOpen())return;
+  const o=itemById(id),a=o?null:arrowById(id);if(!o&&!a)return;if(o&&o.type==='card')return;
+  const kind=a?'arrow':o.type,single=kind==='box'||kind==='arrow';
+  const cfg={
+    box:{title:isNew?'Neue Gruppe benennen':'Gruppe umbenennen',ph:'z. B. Ursachen, Folgen, Beteiligte …'},
+    info:{title:isNew?'Neue Notiz':'Notiz bearbeiten',ph:'Eure Gedanken, Vermutungen, offenen Fragen …'},
+    text:{title:isNew?'Neuer Text':'Text bearbeiten',ph:'Überschrift oder Beschriftung'},
+    arrow:{title:'Pfeil beschriften',ph:'Wie hängen die beiden zusammen?'}
+  }[kind];
+  const input=$('editInput'),area=$('editArea'),field=single?input:area;
+  input.hidden=!single;area.hidden=single;
+  field.value=(a?a.label:o.text)||'';field.maxLength=LIMITS[kind];field.placeholder=cfg.ph;
+  $('editTitle').textContent=cfg.title;
+  const chips=kind==='arrow'&&Array.isArray(KONFIGURATION.pfeilVorschlaege)?KONFIGURATION.pfeilVorschlaege.filter(s=>typeof s==='string'&&s.trim()):[];
+  $('editChips').innerHTML=chips.map(c=>`<button class="chip" type="button" data-chip="${esc(c)}">${esc(c)}</button>`).join('');
+  $('editHint').textContent=single?'Enter = speichern':(COARSE?'':'Strg + Enter = speichern');
+  $('editCancel').textContent=isNew&&kind==='arrow'?'Ohne Beschriftung':'Abbrechen';
+  editing={id,kind,isNew,field};
+  openDlg($('editDialog'));
+  field.focus();try{field.setSelectionRange(field.value.length,field.value.length);}catch(err){}
+}
+function saveEditor(){
+  if(!editing)return;
+  const{id,kind,isNew,field}=editing;
+  let v=field.value.slice(0,LIMITS[kind]);v=kind==='box'||kind==='arrow'?v.replace(/\s+/g,' ').trim():v.replace(/^\s+|\s+$/g,'');
+  const apply=()=>{const a=arrowById(id),o=itemById(id);if(a)a.label=v;else if(o)o.text=v;};
+  // Neu erstellte Elemente: Text gehört zum selben Rückgängig-Schritt wie das Erstellen
+  if(isNew){apply();updateUndoButtons();scheduleSave();}else change(kind==='arrow'?'Pfeil beschriftet':NAMES[kind]+' bearbeitet',apply);
+  editing=null;closeDlg($('editDialog'));renderAll();select(id);
+}
+$('editSave').onclick=saveEditor;
+$('editCancel').onclick=()=>closeDlg($('editDialog'));
+$('editDialog').addEventListener('close',()=>{if(!isOpen($('editDialog')))editing=null;});   // verspätete close-Events früherer Sitzungen ignorieren
+$('editInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();saveEditor();}});
+$('editArea').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();e.stopPropagation();saveEditor();}});
+$('editChips').addEventListener('click',e=>{const c=e.target.closest('[data-chip]');if(!c||!editing)return;editing.field.value=c.dataset.chip;editing.field.focus();});
+
+function ask(opts){
+  return new Promise(resolve=>{
+    const d=$('askDialog'),inp=$('askInput');let result={value:null,input:''};
+    $('askTitle').textContent=opts.title;$('askText').textContent=opts.text||'';$('askText').hidden=!opts.text;
+    inp.hidden=!opts.input;if(opts.input){inp.value=opts.input.value||'';inp.placeholder=opts.input.placeholder||'';inp.maxLength=opts.input.max||80;}
+    $('askActions').innerHTML=opts.buttons.map((b,i)=>`<button class="tbtn${b.primary?' primary':''}" data-i="${i}">${esc(b.label)}</button>`).join('');
+    const finish=i=>{result={value:opts.buttons[i].value,input:inp.value};closeDlg(d);};
+    $('askActions').onclick=e=>{const b=e.target.closest('[data-i]');if(b)finish(+b.dataset.i);};
+    inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();const i=opts.buttons.findIndex(b=>b.primary);if(i>=0)finish(i);}};
+    d.addEventListener('close',function h(){if(isOpen(d))return;d.removeEventListener('close',h);resolve(result);});
+    openDlg(d);if(opts.input)inp.focus();
+  });
+}
+$('helpBtn').onclick=()=>openDlg($('helpDialog'));
+$('closeHelp').onclick=()=>closeDlg($('helpDialog'));
+
+/* ---------- Tooltips: Maus = Hover, Touch = lange drücken ---------- */
+const tipEl=$('tip');let tipTimer=null,tipHide=null,longPressEl=null;
+function showTip(el){
+  const html=el.dataset.tip;if(!html)return;
+  tipEl.innerHTML=html;tipEl.classList.add('show');
+  const r=el.getBoundingClientRect(),t=tipEl.getBoundingClientRect();
+  let top=r.bottom+8;if(top+t.height>innerHeight-8)top=r.top-t.height-8;
+  tipEl.style.left=clamp(r.left+r.width/2-t.width/2,8,innerWidth-t.width-8)+'px';tipEl.style.top=Math.max(8,top)+'px';
+}
+function hideTip(){clearTimeout(tipTimer);clearTimeout(tipHide);tipEl.classList.remove('show');}
+document.addEventListener('pointerover',e=>{
+  if(e.pointerType!=='mouse')return;const el=e.target.closest&&e.target.closest('[data-tip]');
+  if(!el||gesture)return;clearTimeout(tipTimer);tipTimer=setTimeout(()=>showTip(el),380);
+});
+document.addEventListener('pointerout',e=>{const el=e.target.closest&&e.target.closest('[data-tip]');if(el&&!el.contains(e.relatedTarget))hideTip();});
+document.addEventListener('pointerdown',e=>{
+  hideTip();longPressEl=null;
+  if(e.pointerType==='mouse')return;
+  const el=e.target.closest&&e.target.closest('[data-tip]');if(!el||el.closest('.viewport'))return;
+  tipTimer=setTimeout(()=>{longPressEl=el;showTip(el);},480);
+},true);
+document.addEventListener('pointerup',()=>{clearTimeout(tipTimer);if(longPressEl)tipHide=setTimeout(hideTip,2200);},true);
+document.addEventListener('click',e=>{if(longPressEl&&longPressEl.contains(e.target)){e.preventDefault();e.stopPropagation();longPressEl=null;}},true);
+
+/* ---------- Toast ---------- */
+let toastTimer=null;
+function toast(msg,withUndo){
+  const el=$('toast');el.innerHTML=`<span>${esc(msg)}</span>${withUndo?'<button type="button" id="toastUndo">Rückgängig</button>':''}`;
+  el.classList.toggle('has-action',!!withUndo);el.classList.add('show');
+  if(withUndo)$('toastUndo').onclick=()=>{el.classList.remove('show');undo();};
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),withUndo?5200:2600);
+}
+
+/* ---------- Tastatur ---------- */
+window.addEventListener('keydown',e=>{
+  if(anyDialogOpen()){if(!HAS_DIALOG&&e.key==='Escape')document.querySelectorAll('dialog[open]').forEach(closeDlg);return;}
+  const t=e.target,td=t.closest&&t.closest('dialog');if(t.matches&&t.matches('input,textarea,select,[contenteditable="true"]')&&!(td&&!isOpen(td)))return;
+  const mod=e.ctrlKey||e.metaKey,k=(e.key||'').toLowerCase();
+  if(mod&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}
+  if(mod&&k==='y'){e.preventDefault();redo();return;}
+  if(mod&&k==='s'){e.preventDefault();exportJSON();return;}
+  if(mod||e.altKey)return;
+  if(e.key==='Delete'||e.key==='Backspace'){if(state.selected){e.preventDefault();deleteSelected();}return;}
+  if(e.key==='Escape'){if(arrowStart)cancelArrowStart();else if(state.selected)select(null);else setTool('select');setDrawer(false);return;}
+  if(e.key==='Enter'&&state.selected){e.preventDefault();openEditor(state.selected);return;}
+  if(e.key===' '){if(!(t.closest&&t.closest('button'))){e.preventDefault();spaceDown=true;viewport.classList.add('space');}return;}
+  if(e.key==='+'||e.key==='='){zoomTo(state.view.scale*1.18);return;}
+  if(e.key==='-'){zoomTo(state.view.scale/1.18);return;}
+  if(e.key==='0'){fitView();return;}
+  const tool={v:'select',a:'arrow',g:'box',n:'info',t:'text'}[k];if(tool)setTool(tool);
+});
+window.addEventListener('keyup',e=>{if(e.key===' '){spaceDown=false;viewport.classList.remove('space');}});
+window.addEventListener('blur',()=>{spaceDown=false;viewport.classList.remove('space');});
+
+/* ---------- Seitenleiste als Schublade ---------- */
+const drawerMQ=matchMedia('(max-width:899px), (orientation:portrait) and (max-width:1100px)');
+function setDrawer(open){document.body.classList.toggle('drawer-open',!!open&&drawerMQ.matches);}
+$('drawerBtn').onclick=()=>setDrawer(!document.body.classList.contains('drawer-open'));
+$('closeDrawer').onclick=()=>setDrawer(false);
+$('shade').onclick=()=>setDrawer(false);
+(drawerMQ.addEventListener?drawerMQ.addEventListener.bind(drawerMQ,'change'):drawerMQ.addListener.bind(drawerMQ))(()=>setDrawer(false));
+
+/* ---------- Namen & Antwort ---------- */
+$('teamInput').addEventListener('input',e=>{state.team=e.target.value.slice(0,80);scheduleSave();});
+$('answerInput').addEventListener('input',e=>{state.answer=e.target.value.slice(0,3000);scheduleSave();});
+
+/* ---------- Automatisch speichern (localStorage) ---------- */
+const STORE_KEY='mystery-board:'+KONFIGURATION.projektId;
+let saveTimer=null,storageOK=true,lastSaved=null;
+function payload(){return{format:'mystery-board-v2',version:VERSION,projektId:KONFIGURATION.projektId,savedAt:new Date().toISOString(),team:state.team,answer:state.answer,deck:state.deck,cards:state.cards,notes:state.notes,boxes:state.boxes,arrows:state.arrows,view:state.view};}
+function scheduleSave(){if(!window.__boardStarted)return;clearTimeout(saveTimer);saveTimer=setTimeout(saveNow,500);}
+function saveNow(){
+  clearTimeout(saveTimer);if(!window.__boardStarted)return;
+  try{localStorage.setItem(STORE_KEY,JSON.stringify(payload()));storageOK=true;lastSaved=new Date();}
+  catch(err){if(storageOK)toast('Automatisches Speichern ist hier nicht möglich – bitte zwischendurch „Sichern“.');storageOK=false;}
+  updateSaveState();
+}
+function updateSaveState(){
+  const el=$('saveState');el.classList.toggle('warn',!storageOK);
+  el.textContent=!storageOK?'⚠ Kein Autosave':lastSaved?`✓ Gespeichert ${pad2(lastSaved.getHours())}:${pad2(lastSaved.getMinutes())}`:'✓ Autosave aktiv';
+}
+function readStore(){try{const s=localStorage.getItem(STORE_KEY);return s?JSON.parse(s):null;}catch(err){storageOK=false;return null;}}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveNow();});
+window.addEventListener('pagehide',saveNow);
+window.addEventListener('beforeunload',e=>{saveNow();if(!storageOK&&hasContent(state)){e.preventDefault();e.returnValue='';}});
+const pad2=n=>String(n).padStart(2,'0');
+const hasContent=d=>!!(d.cards.length||d.notes.length||d.boxes.length||d.arrows.length||(d.answer||'').trim());
+
+/* ---------- Datei prüfen (Import & Autosave) ---------- */
+function sanitize(obj){
+  if(!obj||typeof obj!=='object')throw Error('Die Datei ist keine gültige Board-Datei.');
+  if(obj.format!=='mystery-board-v1'&&obj.format!=='mystery-board-v2')throw Error('Das ist keine Mystery-Board-Datei.');
+  if(obj.projektId!==KONFIGURATION.projektId)throw Error(`Die Datei gehört zu einem anderen Mystery („${String(obj.projektId).slice(0,60)}“).`);
+  const arr=v=>Array.isArray(v)?v:[];
+  const num=(v,min,max,def)=>{v=Number(v);return Number.isFinite(v)?clamp(v,min,max):def;};
+  const str=(v,max)=>typeof v==='string'?v.slice(0,max):'';
+  const OLD_PH=['Antippen: Text eingeben …','Doppelklick: Text eingeben …','Neue Gruppe'];
+  const txt=(v,max)=>{const s=str(v,max);return OLD_PH.indexOf(s)>=0?'':s;};
+  const col=v=>PALETTE.indexOf(v)>=0?v:PALETTE[0];
+  const ids=new Set(),uniq=v=>{if(typeof v!=='string'||!/^[A-Za-z0-9_-]{1,40}$/.test(v)||ids.has(v))return null;ids.add(v);return v;};
+  const valid=new Set(HINWEISE.map(h=>h.id)),used=new Set();
+  const cards=arr(obj.cards).map(c=>{if(!c||!valid.has(c.materialId)||used.has(c.materialId))return null;const id=uniq(c.id);if(!id)return null;used.add(c.materialId);return{type:'card',id,materialId:c.materialId,x:num(c.x,0,W-CARD_W,100),y:num(c.y,0,H-80,100),z:num(c.z,0,1e9,0)};}).filter(Boolean);
+  const notes=arr(obj.notes).map(n=>{if(!n)return null;const id=uniq(n.id);if(!id)return null;const type=n.type==='text'?'text':'info',S=SIZES[type];return{type,id,x:num(n.x,0,W-S.minW,100),y:num(n.y,0,H-S.minH,100),w:num(n.w,S.minW,W,S.defW),h:num(n.h,S.minH,H,S.defH),text:txt(n.text,LIMITS[type]),color:col(n.color),z:num(n.z,0,1e9,0)};}).filter(Boolean);
+  const boxes=arr(obj.boxes).map(b=>{if(!b)return null;const id=uniq(b.id);if(!id)return null;const S=SIZES.box;return{type:'box',id,x:num(b.x,0,W-S.minW,100),y:num(b.y,20,H-S.minH,100),w:num(b.w,S.minW,W,S.defW),h:num(b.h,S.minH,H,S.defH),text:txt(b.text,LIMITS.box),color:col(b.color)};}).filter(Boolean);
+  const end=e=>{if(!e||typeof e!=='object')return null;if(e.item!=null)return ids.has(e.item)?{item:e.item}:null;const x=Number(e.x),y=Number(e.y);return Number.isFinite(x)&&Number.isFinite(y)?{x:clamp(x,0,W),y:clamp(y,0,H)}:null;};
+  const arrows=arr(obj.arrows).map(a=>{if(!a)return null;const from=end(a.from),to=end(a.to);if(!from||!to)return null;const id=uniq(a.id);if(!id)return null;return{id,from,to,color:col(a.color),label:str(a.label,LIMITS.arrow)};}).filter(Boolean);
+  const rest=HINWEISE.map(h=>h.id).filter(i=>!used.has(i));
+  const ordered=arr(obj.deck).filter(i=>rest.indexOf(i)>=0).filter((v,i,a)=>a.indexOf(v)===i);
+  const deck=shuffle(rest.filter(i=>ordered.indexOf(i)<0)).concat(ordered);
+  const v=obj.view||{};
+  return{deck,cards,notes,boxes,arrows,team:str(obj.team,80),answer:str(obj.answer,3000),savedAt:str(obj.savedAt,40),
+    view:Number.isFinite(Number(v.scale))?{x:num(v.x,-1e5,1e5,0),y:num(v.y,-1e5,1e5,0),scale:num(v.scale,.3,2,1)}:null};
+}
+function applyData(d){
+  state.deck=d.deck;state.cards=d.cards;state.notes=d.notes;state.boxes=d.boxes;state.arrows=d.arrows;
+  state.team=d.team;state.answer=d.answer;state.selected=null;$('teamInput').value=d.team;$('answerInput').value=d.answer;
+  zTop=Math.max(1,...state.cards.concat(state.notes).map(o=>(o.z||0)+1));
+  cancelArrowStart(true);
+}
+
+/* ---------- Sichern / Öffnen / Neu ---------- */
+const slug=s=>String(s||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40);
+function stamp(d){d=d||new Date();return`${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}_${pad2(d.getHours())}-${pad2(d.getMinutes())}`;}
+const fileBase=()=>`${slug(KONFIGURATION.projektId)}_${slug(state.team)||'ohne-namen'}_${stamp()}`;
+function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),120000);}
+async function ensureTeam(){
+  if(state.team.trim())return true;
+  const r=await ask({title:'Wer hat dieses Board erstellt?',text:'Die Namen erscheinen im Bild und im Dateinamen.',input:{placeholder:'z. B. Lena, Tim, Aylin',max:80},
+    buttons:[{label:'Abbrechen',value:null},{label:'Ohne Namen',value:'skip'},{label:'Übernehmen',value:'ok',primary:true}]});
+  if(r.value===null)return false;
+  if(r.value==='ok'&&r.input.trim()){state.team=r.input.trim().slice(0,80);$('teamInput').value=state.team;saveNow();}
+  return true;
+}
+async function exportJSON(){
+  if(!await ensureTeam())return;
+  download(new Blob([JSON.stringify(payload(),null,1)],{type:'application/json'}),fileBase()+'.json');
+  toast('Board als Datei gesichert. Mit „Öffnen“ lässt es sich weiterbearbeiten.');
+}
+$('exportBtn').onclick=exportJSON;
+$('importBtn').onclick=()=>$('fileInput').click();
+$('fileInput').addEventListener('change',async e=>{
+  const file=e.target.files&&e.target.files[0];if(!file)return;
+  try{
+    const d=sanitize(JSON.parse(await file.text()));
+    change('Datei geöffnet',()=>applyData(d));
+    if(d.view)state.view=d.view;renderAll();if(!d.view)fitView();saveNow();
+    toast('Board geöffnet'+(d.team?` (${d.team})`:'')+'.',true);
+  }catch(err){ask({title:'Datei konnte nicht geöffnet werden',text:err instanceof SyntaxError?'Die Datei ist beschädigt oder keine Board-Datei.':err.message,buttons:[{label:'OK',value:1,primary:true}]});}
+  finally{e.target.value='';}
+});
+$('resetBtn').onclick=async()=>{
+  if(hasContent(state)){
+    const r=await ask({title:'Neues Board beginnen?',text:'Das aktuelle Board wird geleert und die Karten werden neu gemischt. Wer den Stand behalten will, sollte vorher „Sichern“ oder „Als Bild“ nutzen.',
+      buttons:[{label:'Abbrechen',value:null},{label:'Neues Board',value:'new',primary:true}]});
+    if(r.value!=='new')return;
+  }
+  freshBoard();saveNow();toast('Neues Board – die Karten sind neu gemischt.');
+};
+function freshBoard(){
+  state.deck=shuffle(HINWEISE.map(h=>h.id));state.cards=[];state.notes=[];state.boxes=[];state.arrows=[];
+  state.team='';state.answer='';state.selected=null;$('teamInput').value='';$('answerInput').value='';
+  undoStack.length=0;redoStack.length=0;zTop=1;cancelArrowStart(true);setTool('select');state.view=defaultView();renderAll();
+}
+
+/* ---------- PNG-Export ---------- */
+const FONT='Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+function fitLines(ctx,text,maxW,font){
+  ctx.font=font;const out=[];
+  for(const src of String(text==null?'':text).split(/\r?\n/)){
+    if(!src.trim()){out.push('');continue;}
+    let cur='';
+    for(const tok of src.split(/\s+/).filter(Boolean)){
+      const t=cur?cur+' '+tok:tok;
+      if(ctx.measureText(t).width<=maxW){cur=t;continue;}
+      if(cur){out.push(cur);cur='';}
+      if(ctx.measureText(tok).width<=maxW){cur=tok;continue;}
+      let chunk='';for(const ch of tok){if(chunk&&ctx.measureText(chunk+ch).width>maxW){out.push(chunk);chunk='';}chunk+=ch;}cur=chunk;
+    }
+    out.push(cur);
+  }
+  return out;
+}
+function rr(ctx,x,y,w,h,r){r=Math.max(0,Math.min(r,w/2,h/2));ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function drawLines(ctx,lines,x,y,lh,align){ctx.textAlign=align||'left';ctx.textBaseline='top';lines.forEach((l,i)=>ctx.fillText(l,x,y+i*lh));ctx.textAlign='left';}
+function paintBoard(ctx){
+  for(const o of state.boxes.slice().sort((a,b)=>b.w*b.h-a.w*a.h)){
+    ctx.fillStyle=alpha(o.color,.06);ctx.strokeStyle=o.color;ctx.lineWidth=2;ctx.setLineDash([10,7]);rr(ctx,o.x,o.y,o.w,o.h,16);ctx.fill();ctx.stroke();ctx.setLineDash([]);
+    const n=cardsIn(o),name=(o.text||'Gruppe ohne Namen')+(n?`  (${n})`:''),font=`800 13.5px ${FONT}`;
+    const lines=fitLines(ctx,name,Math.max(60,o.w-50),font),tw=Math.max(...lines.map(l=>ctx.measureText(l).width))+20,th=lines.length*17.5+10;
+    ctx.fillStyle=o.color;rr(ctx,o.x+12,o.y-16,tw,th,9);ctx.fill();
+    ctx.fillStyle='#0a1020';ctx.font=font;drawLines(ctx,lines,o.x+22,o.y-11,17.5);
+  }
+  for(const a of state.arrows){
+    const g=arrowGeom(a);if(!g)continue;const{p,q,ang}=g,L=14,Wg=7.5,bx=q.x-Math.cos(ang)*L,by=q.y-Math.sin(ang)*L;
+    ctx.strokeStyle=a.color;ctx.lineWidth=2.8;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(bx,by);ctx.stroke();
+    ctx.fillStyle=a.color;ctx.beginPath();ctx.moveTo(q.x,q.y);ctx.lineTo(bx-Math.sin(ang)*Wg,by+Math.cos(ang)*Wg);ctx.lineTo(bx+Math.sin(ang)*Wg,by-Math.cos(ang)*Wg);ctx.closePath();ctx.fill();
+  }
+  for(const o of state.cards.concat(state.notes).sort((a,b)=>(a.z||0)-(b.z||0))){
+    const r=rectOf(o);
+    if(o.type==='card'){
+      const h=hintById(o.materialId);if(!h)continue;const font=`550 14px ${FONT}`,lines=fitLines(ctx,h.body,CARD_W-42,font),hh=Math.max(r.h,lines.length*21.4+36);
+      ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=18;ctx.shadowOffsetY=10;ctx.fillStyle='#1e2840';rr(ctx,o.x,o.y,CARD_W,hh,11);ctx.fill();ctx.restore();
+      ctx.strokeStyle='#647492';ctx.lineWidth=1.2;rr(ctx,o.x,o.y,CARD_W,hh,11);ctx.stroke();
+      ctx.fillStyle='#edf2ff';ctx.font=font;drawLines(ctx,lines,o.x+20,o.y+(hh-lines.length*21.4)/2+2,21.4);
+    }else if(o.type==='info'){
+      const font=`560 15px ${FONT}`,lines=o.text?fitLines(ctx,o.text,r.w-28,font):[],hh=Math.max(r.h,lines.length*21.75+44);
+      ctx.save();ctx.shadowColor='rgba(0,0,0,.45)';ctx.shadowBlur=16;ctx.shadowOffsetY=9;ctx.fillStyle=o.color;rr(ctx,o.x,o.y,r.w,hh,6);ctx.fill();ctx.restore();
+      ctx.fillStyle='rgba(11,17,34,.55)';ctx.font=`850 10px ${FONT}`;ctx.textBaseline='top';ctx.fillText('NOTIZ',o.x+14,o.y+11);
+      ctx.fillStyle='#0b1122';ctx.font=font;drawLines(ctx,lines,o.x+14,o.y+30,21.75);
+    }else{
+      if(!o.text)continue;const font=`760 20px ${FONT}`,lines=fitLines(ctx,o.text,r.w-18,font);
+      ctx.fillStyle=o.color;ctx.font=font;drawLines(ctx,lines,o.x+9,o.y+8,26);
+    }
+  }
+  for(const a of state.arrows){
+    if(!a.label)continue;const g=arrowGeom(a);if(!g)continue;
+    const font=`700 12.5px ${FONT}`,lines=fitLines(ctx,a.label,210,font),w=Math.max(...lines.map(l=>ctx.measureText(l).width))+24,h=lines.length*16.25+10;
+    ctx.fillStyle='#0b1122';ctx.strokeStyle=a.color;ctx.lineWidth=1.5;rr(ctx,g.mid.x-w/2,g.mid.y-h/2,w,h,lines.length>1?10:h/2);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#f0f4ff';ctx.font=font;drawLines(ctx,lines,g.mid.x,g.mid.y-h/2+5,16.25,'center');
+  }
+}
+function renderPNG(){
+  const b=contentBounds();if(!b)throw Error('Das Board ist leer.');
+  const pad=70,mc=document.createElement('canvas').getContext('2d');
+  const cw=b.w+pad*2,TW=Math.max(cw,1300),offX=(TW-cw)/2,hp=48,inner=TW-hp*2;
+  const now=new Date(),date=`${pad2(now.getDate())}.${pad2(now.getMonth()+1)}.${now.getFullYear()}, ${pad2(now.getHours())}:${pad2(now.getMinutes())} Uhr`;
+  const tL=fitLines(mc,KONFIGURATION.titel,inner,`800 38px ${FONT}`),qL=fitLines(mc,'Leitfrage: '+KONFIGURATION.leitfrage,inner,`650 22px ${FONT}`);
+  const meta=`${state.team.trim()?'Namen: '+state.team.trim():'Namen: –'}   ·   ${date}   ·   ${state.cards.length} von ${HINWEISE.length} Hinweisen aufgedeckt`;
+  const mL=fitLines(mc,meta,inner,`500 17px ${FONT}`),ans=state.answer.trim(),aL=ans?fitLines(mc,ans,inner-40,`500 19px ${FONT}`):[];
+  const ansH=ans?28+aL.length*27+30:0,HH=hp+tL.length*46+12+qL.length*30+14+mL.length*24+(ans?22+ansH:0)+hp*.75;
+  const TH=HH+b.h+pad*2,s=4000/Math.max(TW,TH);
+  const cv=document.createElement('canvas');cv.width=Math.round(TW*s);cv.height=Math.round(TH*s);
+  const ctx=cv.getContext('2d',{alpha:false});if(!ctx)throw Error('Der Browser kann kein Bild erzeugen.');
+  ctx.scale(s,s);ctx.fillStyle='#0b1122';ctx.fillRect(0,0,TW,TH);
+  // Kopfbereich
+  ctx.fillStyle='#111a33';ctx.fillRect(0,0,TW,HH);ctx.fillStyle='#2f3d63';ctx.fillRect(0,HH-2,TW,2);
+  let y=hp;ctx.fillStyle='#f0f4ff';ctx.font=`800 38px ${FONT}`;drawLines(ctx,tL,hp,y,46);y+=tL.length*46+12;
+  ctx.fillStyle='#ffd67e';ctx.font=`650 22px ${FONT}`;drawLines(ctx,qL,hp,y,30);y+=qL.length*30+14;
+  ctx.fillStyle='#9fb0d2';ctx.font=`500 17px ${FONT}`;drawLines(ctx,mL,hp,y,24);y+=mL.length*24;
+  if(ans){
+    y+=22;ctx.fillStyle='#0b1326';ctx.strokeStyle='#78e6c7';ctx.lineWidth=1.5;rr(ctx,hp,y,inner,ansH,12);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#78e6c7';ctx.font=`800 13px ${FONT}`;ctx.textBaseline='top';ctx.fillText('UNSERE ANTWORT',hp+20,y+14);
+    ctx.fillStyle='#eef4ff';ctx.font=`500 19px ${FONT}`;drawLines(ctx,aL,hp+20,y+38,27);
+  }
+  // Board
+  ctx.save();ctx.beginPath();ctx.rect(0,HH,TW,TH-HH);ctx.clip();ctx.translate(offX+pad-b.x,HH+pad-b.y);
+  ctx.fillStyle='rgba(135,157,199,.16)';
+  const gx0=Math.floor((b.x-pad-offX)/25)*25,gy0=Math.floor((b.y-pad)/25)*25;
+  for(let gx=gx0;gx<b.x-pad-offX+TW;gx+=25)for(let gy=gy0;gy<b.y+b.h+pad;gy+=25)ctx.fillRect(gx,gy,1.3,1.3);
+  paintBoard(ctx);ctx.restore();
+  return cv;
+}
+async function exportPNG(){
+  if(!allItems().length&&!state.arrows.length){toast('Das Board ist noch leer.');return;}
+  if(!await ensureTeam())return;
+  const btn=$('pngBtn'),old=btn.innerHTML;btn.disabled=true;btn.innerHTML='<span>Bild wird erstellt …</span>';
+  await new Promise(r=>setTimeout(r,40));
+  try{
+    const cv=renderPNG();
+    const blob=await new Promise((res,rej)=>cv.toBlob(x=>x?res(x):rej(Error('Das Bild konnte nicht erzeugt werden.')),'image/png'));
+    download(blob,fileBase()+'.png');toast(`Bild gespeichert (${cv.width} × ${cv.height} Pixel).`);cv.width=cv.height=0;
+  }catch(err){console.error(err);ask({title:'Bild-Export fehlgeschlagen',text:err.message+' Tipp: Browser aktualisieren oder „Sichern“ nutzen.',buttons:[{label:'OK',value:1,primary:true}]});}
+  finally{btn.disabled=false;btn.innerHTML=old;}
+}
+$('pngBtn').onclick=exportPNG;
+
+/* ---------- Start ---------- */
+function applyProjectInfo(){
+  const K=KONFIGURATION;document.title=K.titel+' – Mystery';
+  $('brandTitle').textContent=K.titel;$('brandSub').textContent=K.untertitel||'Interaktives Mystery';
+  $('topicTitle').textContent=K.titel;$('topicIntro').textContent=K.einleitung||'';$('topicIntro').hidden=!K.einleitung;
+  $('topicQuestion').textContent=K.leitfrage||'';$('topicTask').textContent=K.arbeitsauftrag||'';
+  $('answerField').hidden=K.antwortfeld===false;
+}
+async function init(){
+  validateContent();
+  if(COARSE)document.body.classList.add('coarse');
+  applyProjectInfo();
+  state.deck=shuffle(HINWEISE.map(h=>h.id));state.view=defaultView();
+  setTool('select');renderAll();
+  window.__boardStarted=true;$('startcheck').remove();
+  window.mysteryBoard={state,version:VERSION};
+  const saved=readStore();
+  if(saved){
+    let d=null;try{d=sanitize(saved);}catch(err){console.warn('Autosave verworfen:',err.message);}
+    if(d&&hasContent(d)){
+      const t=d.savedAt?new Date(d.savedAt):null,when=t&&!isNaN(t)?`${pad2(t.getDate())}.${pad2(t.getMonth()+1)}. um ${pad2(t.getHours())}:${pad2(t.getMinutes())} Uhr`:'';
+      const r=await ask({title:'Weiterarbeiten?',text:`Auf diesem Gerät ist ein Board gespeichert${d.team?` von ${d.team}`:''}${when?` (zuletzt ${when})`:''} – ${d.cards.length} ${d.cards.length===1?'Hinweis':'Hinweise'} aufgedeckt.`,
+        buttons:[{label:'Neu beginnen',value:'new'},{label:'Weiterarbeiten',value:'resume',primary:true}]});
+      if(r.value==='new'){freshBoard();saveNow();}
+      else{applyData(d);if(d.view)state.view=d.view;renderAll();if(!d.view)fitView();toast('Gespeicherter Stand geladen.');}
+    }
+  }
+  updateSaveState();
+}
+init().catch(err=>{console.error(err);if(!window.__boardStarted)window.__boardFail(err.content?'Im Inhaltsblock stimmt etwas nicht.':'Das Mystery konnte nicht starten.',err.message);});
+})();
+</script>
+</body>
+</html>
