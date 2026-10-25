@@ -1,0 +1,138 @@
+/* =========================================================
+   EduSkorn – gemeinsames Design der Übersichtsseiten
+   (Startseite + Jahrgangsseiten, NICHT die Übungsdateien)
+   ========================================================= */
+:root {
+  /* Grundtöne: cremig, warm */
+  --bg:        #f7f3ea;
+  --paper:     #fffdf8;
+  --ink:       #1f2a33;
+  --muted:     #6f706a;
+  --line:      #e6dfcf;
+
+  /* Akzent aus dem Logo (Türkis), gedämpft */
+  --teal:      #2aa3a0;
+
+  /* Biologie: Grün aus dem Logo, Flächen cremig-salbei */
+  --bio:       #1d5b3c;
+  --bio-soft:  #eef0e2;
+  --bio-line:  #d5dcc3;
+  --bio-btn:   #fbfaf2;
+  --bio-hover: #e3e9d3;
+
+  /* Informatik: Navy aus dem Logo, Flächen cremig-taubenblau */
+  --info:       #1d3557;
+  --info-soft:  #e6eaee;
+  --info-line:  #cdd5df;
+  --info-btn:   #fbfaf6;
+  --info-hover: #dbe2ea;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 16px/1.5 "Segoe UI", Calibri, "Liberation Sans", system-ui, sans-serif;
+}
+
+/* ---------- Kopfzeile mit Logo ---------- */
+header.kopf { background: var(--paper); border-bottom: 1px solid var(--line); }
+header.kopf .innen {
+  max-width: 1080px; margin: 0 auto; padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+}
+header.kopf img.logo { height: 54px; width: auto; display: block; }
+header.kopf .claim { color: var(--muted); font-size: 14.5px; }
+.streifen { height: 4px; background: linear-gradient(90deg, var(--bio) 0 50%, var(--info) 50% 100%); }
+body.bio  .streifen { background: var(--bio); }
+body.info .streifen { background: var(--info); }
+
+main { max-width: 1080px; margin: 0 auto; padding: 26px 20px 40px; }
+
+/* ---------- Startseite: zwei Fachbereiche ---------- */
+.faecher { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.fach { border-radius: 16px; padding: 22px 22px 24px; border: 1px solid; }
+.fach.bio  { background: var(--bio-soft);  border-color: var(--bio-line); }
+.fach.info { background: var(--info-soft); border-color: var(--info-line); }
+.fach h2 { margin: 0 0 4px; font-size: 26px; letter-spacing: -.01em; }
+.fach.bio h2  { color: var(--bio); }
+.fach.info h2 { color: var(--info); }
+.fach h3 {
+  margin: 18px 0 8px; font-size: 13px; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .06em;
+}
+.stufen { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.stufen a {
+  position: relative; display: block; text-align: center; text-decoration: none; font-weight: 600;
+  padding: 14px 10px; border-radius: 10px; border: 1px solid; font-size: 17px;
+  transition: background .15s, transform .15s, box-shadow .15s;
+}
+.fach.bio  .stufen a { background: var(--bio-btn);  border-color: var(--bio-line);  color: var(--bio); }
+.fach.info .stufen a { background: var(--info-btn); border-color: var(--info-line); color: var(--info); }
+.fach.bio  .stufen a:hover { background: var(--bio-hover); }
+.fach.info .stufen a:hover { background: var(--info-hover); }
+.stufen a:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,.06); }
+.stufen a:focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+/* Stufen mit Material bekommen class="voll" → türkiser Punkt */
+.stufen a.voll::after {
+  content: ""; position: absolute; top: 8px; right: 8px; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--teal);
+}
+.legende { margin: 18px 2px 0; color: var(--muted); font-size: 13.5px; }
+.legende .punkt { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--teal); margin-right: 6px; vertical-align: 1px; }
+
+/* ---------- Jahrgangsseiten ---------- */
+nav.pfad { font-size: 14px; color: var(--muted); margin-bottom: 6px; }
+nav.pfad a { color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--line); }
+nav.pfad a:hover { color: var(--ink); }
+h1.titel { margin: 0 0 18px; font-size: 30px; letter-spacing: -.01em; }
+body.bio  h1.titel { color: var(--bio); }
+body.info h1.titel { color: var(--info); }
+h1.titel span { color: var(--muted); font-weight: 400; }
+
+.leer {
+  background: var(--paper); border: 1px dashed var(--line); border-radius: 14px;
+  padding: 44px 24px; text-align: center; margin-top: 8px;
+}
+.leer p.gross { font-size: 21px; margin: 0 0 6px; color: var(--ink); }
+.leer p.klein { margin: 0 0 22px; color: var(--muted); }
+a.knopf {
+  display: inline-block; text-decoration: none; font-weight: 600; padding: 10px 18px; border-radius: 10px; border: 1px solid;
+}
+body.bio  a.knopf { color: var(--bio);  border-color: var(--bio-line);  background: var(--bio-btn); }
+body.info a.knopf { color: var(--info); border-color: var(--info-line); background: var(--info-btn); }
+body.bio  a.knopf:hover { background: var(--bio-hover); }
+body.info a.knopf:hover { background: var(--info-hover); }
+
+/* Themen und Übungskarten */
+section.thema { margin-bottom: 30px; }
+section.thema h2 { font-size: 20px; margin: 0 0 10px; padding-bottom: 6px; border-bottom: 2px solid var(--line); }
+body.bio  section.thema h2 { color: var(--bio); }
+body.info section.thema h2 { color: var(--info); }
+section.thema h3 { color: var(--muted); font-size: 15px; font-weight: 600; margin: 16px 0 6px; }
+p.intro { color: var(--muted); font-size: 14.5px; margin: 0 0 8px; }
+a.uebung {
+  display: block; background: var(--paper); border: 1px solid var(--line); border-left: 6px solid;
+  border-radius: 10px; padding: 12px 16px; margin: 10px 0; color: var(--ink); text-decoration: none;
+  transition: background .15s;
+}
+body.bio  a.uebung { border-left-color: var(--bio); }
+body.info a.uebung { border-left-color: var(--info); }
+body.bio  a.uebung:hover { background: var(--bio-soft); }
+body.info a.uebung:hover { background: var(--info-soft); }
+a.uebung b { font-size: 17px; }
+body.bio  a.uebung b { color: var(--bio); }
+body.info a.uebung b { color: var(--info); }
+a.uebung span { display: block; color: var(--muted); font-size: 14px; margin-top: 2px; }
+
+footer { max-width: 1080px; margin: 0 auto; padding: 10px 20px 30px; color: var(--muted); font-size: 13px; }
+
+/* ---------- Handy ---------- */
+@media (max-width: 760px) {
+  .faecher { grid-template-columns: 1fr; }
+  header.kopf img.logo { height: 42px; }
+  header.kopf .claim { display: none; }
+  main { padding: 18px 16px 30px; }
+  .fach { padding: 18px 16px 20px; }
+  h1.titel { font-size: 25px; }
+}
