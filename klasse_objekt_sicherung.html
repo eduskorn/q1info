@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stunde 3 – Einstieg: Klasse und Objekt (Mensa)</title>
+<style>
+:root { --acc:#1f6f78; --acc-soft:#e6f1f2; --warn:#a4522a; --warn-soft:#fbeee6; --ink:#1d2327; --muted:#5b6770; --line:#c9d3d8;
+        --ok:#2f7d32; --ok-soft:#e5f3e6; --bad:#b03a3a; --bad-soft:#f9e3e3; --bg:#f4f6f7; --paper:#fff;
+        --def:#fbf6ec; --def-b:#d9a441; --cls:#e6f1f2; --cls-b:#1f6f78; --obj:#e8eef8; --obj-b:#3b5b9a; }
+* { box-sizing:border-box; }
+html, body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.4 "Segoe UI", Calibri, Carlito, "Liberation Sans", sans-serif; }
+code, .mono { font-family:Consolas, "DejaVu Sans Mono", monospace; }
+header.top { display:flex; align-items:center; gap:18px; padding:10px 18px; background:var(--acc); color:#fff; position:sticky; top:0; z-index:20; }
+header.top h1 { font-size:18px; margin:0; flex:1; }
+header.top .who { font-size:14px; opacity:.95; }
+header.top .timer { font:bold 18px Consolas, monospace; background:rgba(255,255,255,.15); padding:3px 10px; border-radius:6px; }
+button { font:inherit; cursor:pointer; border-radius:8px; border:0; padding:9px 18px; }
+.btn { background:var(--acc); color:#fff; font-weight:bold; }
+.btn.warn { background:var(--warn); }
+.btn.light { background:#fff; color:var(--acc); border:2px solid var(--acc); }
+.btn:disabled { opacity:.45; cursor:default; }
+main { padding:14px 18px 30px; max-width:1500px; margin:0 auto; }
+.situation { background:var(--paper); border-left:8px solid var(--acc); border-radius:8px; padding:12px 18px; margin-bottom:10px; }
+.situation h2 { margin:0 0 4px; font-size:16px; color:var(--acc); }
+.situation p { margin:4px 0; }
+.auftrag { background:var(--warn-soft); border-left:8px solid var(--warn); border-radius:8px; padding:8px 18px; margin-bottom:12px; }
+.work { display:grid; grid-template-columns:330px 1fr; gap:14px; align-items:start; }
+.pool { background:var(--paper); border:2px dashed var(--line); border-radius:10px; padding:10px; position:sticky; top:62px; max-height:calc(100vh - 80px); overflow:auto; }
+.pool h3, .zonebox h3 { margin:0 0 6px; font-size:14px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.drop { min-height:44px; border-radius:8px; padding:5px; display:flex; flex-wrap:wrap; gap:6px; align-content:flex-start; transition:background .15s, outline-color .15s; outline:2px dashed transparent; }
+.drop.multi { min-height:60px; }
+.drop.hover { background:#fff8d9; outline-color:#d9a441; }
+.pool .drop { min-height:300px; }
+.board { display:flex; flex-direction:column; gap:14px; }
+.zonebox { background:var(--paper); border-radius:10px; padding:10px 12px; border:1px solid var(--line); }
+.defs { display:grid; grid-template-columns:1fr 1fr; gap:8px 14px; }
+.defslot { display:grid; grid-template-columns:92px 1fr; align-items:center; gap:6px; }
+.defslot > b { color:var(--warn); font-size:15px; }
+.defslot .drop { background:#fcfaf5; border:1px solid #eadcbc; }
+.diagrams { display:grid; grid-template-columns:1.15fr 1fr 1fr; gap:14px; align-items:start; }
+.uml { border:2px solid var(--ink); border-radius:2px; background:#fff; }
+.uml .sec { border-top:2px solid var(--ink); padding:4px; }
+.uml .sec:first-child { border-top:0; background:#f3f5f6; }
+.uml .lab { font-size:11px; color:var(--muted); padding:0 4px 2px; }
+.uml .drop { min-height:40px; flex-direction:column; flex-wrap:nowrap; align-items:stretch; }
+.uml .drop.multi { min-height:120px; }
+.dtitle { font-size:13px; font-weight:bold; color:var(--acc); margin:0 0 4px; }
+.bin { background:#fbfbfb; border:2px dashed var(--bad); }
+.bin .drop { min-height:70px; }
+.card { user-select:none; touch-action:none; cursor:grab; border-radius:7px; padding:5px 9px; font-size:14px; border:1.5px solid; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.08); max-width:100%; }
+.card.def { background:var(--def); border-color:var(--def-b); font-size:13.5px; }
+.card.cls { background:var(--cls); border-color:var(--cls-b); font-family:Consolas, "DejaVu Sans Mono", monospace; }
+.card.obj { background:var(--obj); border-color:var(--obj-b); font-family:Consolas, "DejaVu Sans Mono", monospace; }
+.card.head { font-weight:bold; }
+.card.clsname { font-weight:bold; }
+.card.dragging { position:fixed; z-index:1000; cursor:grabbing; box-shadow:0 8px 22px rgba(0,0,0,.25); pointer-events:none; }
+.card.right { border-color:var(--ok); background:var(--ok-soft); }
+.card.wrong { border-color:var(--bad); background:var(--bad-soft); }
+.card .why { display:block; font:12px/1.3 "Segoe UI", Calibri, sans-serif; color:var(--bad); margin-top:2px; font-weight:normal; text-decoration:none; }
+.card.right .why { color:var(--ok); }
+.locked .card { cursor:default; }
+.foot { display:flex; justify-content:flex-end; gap:12px; margin-top:16px; }
+/* Start- und Dialogfenster */
+.overlay { position:fixed; inset:0; background:rgba(20,30,35,.6); display:flex; align-items:center; justify-content:center; z-index:50; }
+.dialog { background:#fff; border-radius:12px; padding:22px 26px; width:min(620px, 92vw); box-shadow:0 10px 40px rgba(0,0,0,.3); }
+.dialog h2 { margin:0 0 8px; color:var(--acc); }
+.dialog label { display:block; margin:10px 0 3px; font-weight:bold; }
+.dialog input { width:100%; font:inherit; padding:8px 10px; border:1.5px solid var(--line); border-radius:7px; }
+.notice { background:var(--warn-soft); border-left:6px solid var(--warn); padding:8px 12px; border-radius:6px; font-size:13.5px; margin:12px 0; }
+.dialog .row { display:flex; gap:10px; justify-content:flex-end; margin-top:14px; }
+.hidden { display:none !important; }
+.teachlink { position:fixed; right:10px; bottom:8px; z-index:60; background:transparent; color:var(--muted); font-size:12px; padding:3px 8px; opacity:.55; border:1px solid transparent; }
+.teachlink:hover { opacity:1; border-color:var(--line); background:#fff; }
+/* Ergebnis und Protokoll */
+.result { background:var(--paper); border-radius:10px; border:2px solid var(--acc); padding:12px 18px; margin-bottom:14px; }
+.result .score { font-size:26px; font-weight:bold; color:var(--acc); }
+.banner { background:#2b3a40; color:#fff; padding:10px 18px; font-weight:bold; }
+.banner.ok { background:var(--ok); } .banner.bad { background:var(--bad); }
+.protocol { background:var(--paper); border-radius:10px; border:1px solid var(--line); padding:12px 18px; margin-top:16px; }
+.protocol h2 { margin:0 0 8px; font-size:17px; color:var(--acc); }
+.protocol table { border-collapse:collapse; width:100%; font-size:13.5px; }
+.protocol td, .protocol th { border-bottom:1px solid var(--line); padding:4px 8px; text-align:left; vertical-align:top; }
+.protocol th { color:var(--muted); }
+.protocol .sum td:first-child { font-weight:bold; width:260px; }
+.protocol tr.alarm td { color:var(--bad); font-weight:bold; }
+.protocol details { margin-top:8px; }
+@media print { header.top { position:static; } .pool { position:static; max-height:none; } .foot { display:none; } }
+</style>
+</head>
+<body>
+<script id="abgabe" type="application/json"></script>
+
+<header class="top">
+  <h1>Stunde 3 · Einstieg: Klasse und Objekt in der Schulmensa</h1>
+  <span class="who" id="who"></span>
+  <span class="timer" id="timer">00:00</span>
+</header>
+
+<div id="frozenBanner" class="banner hidden"></div>
+
+<main id="main">
+  <div id="result" class="result hidden"></div>
+
+  <section class="situation">
+    <h2>Die Situation</h2>
+    <p>Die Schulmensa bekommt eine neue Speiseplan-App, die objektorientiert programmiert wird. Für jedes <b>Gericht</b> speichert die App den <b>Namen</b>, den <b>Preis</b> in Euro, die <b>Kalorien</b>, ob es <b>vegetarisch</b> ist und wie viele <b>Portionen</b> heute noch übrig sind.</p>
+    <p>Ein Gericht kann <b>bestellt</b> werden, dann gibt es eine Portion weniger. Man kann <b>prüfen, ob es noch verfügbar ist</b>, und die Küche kann neue Portionen <b>nachkochen</b>.</p>
+    <p>Heute gibt es <b>Spaghetti Bolognese</b> für 3,80 € mit 720 kcal, nicht vegetarisch, noch 25 Portionen, und ein <b>Gemüsecurry</b> für 3,20 € mit 540 kcal, vegetarisch, noch 12 Portionen.</p>
+  </section>
+
+  <section class="auftrag"><b>Auftrag:</b> Zieht jede Karte an die richtige Stelle: die Definitionen, das Klassendiagramm und die beiden Objektdiagramme. <b>Nicht jede Karte passt.</b> Was nirgends hingehört, kommt nach unten in „Gehört nicht dazu“. Ihr seht erst nach der Abgabe, was richtig war.</section>
+
+  <div class="work" id="work">
+    <aside class="pool">
+      <h3>Karten</h3>
+      <div class="drop multi" data-zone="pool" id="pool"></div>
+    </aside>
+
+    <div class="board">
+      <div class="zonebox">
+        <h3>Definitionen</h3>
+        <div class="defs">
+          <div class="defslot"><b>Klasse</b><div class="drop" data-zone="def-klasse" data-single="1"></div></div>
+          <div class="defslot"><b>Objekt</b><div class="drop" data-zone="def-objekt" data-single="1"></div></div>
+          <div class="defslot"><b>Attribut</b><div class="drop" data-zone="def-attribut" data-single="1"></div></div>
+          <div class="defslot"><b>Methode</b><div class="drop" data-zone="def-methode" data-single="1"></div></div>
+        </div>
+      </div>
+
+      <div class="diagrams">
+        <div>
+          <p class="dtitle">Klassendiagramm</p>
+          <div class="uml">
+            <div class="sec"><div class="lab">Klassenname</div><div class="drop" data-zone="k-name" data-single="1"></div></div>
+            <div class="sec"><div class="lab">Attribute</div><div class="drop multi" data-zone="k-attr"></div></div>
+            <div class="sec"><div class="lab">Methoden</div><div class="drop multi" data-zone="k-meth"></div></div>
+          </div>
+        </div>
+        <div>
+          <p class="dtitle">Objektdiagramm 1</p>
+          <div class="uml">
+            <div class="sec"><div class="lab">objektname : Klasse</div><div class="drop" data-zone="oA-head" data-single="1"></div></div>
+            <div class="sec"><div class="lab">Attributwerte</div><div class="drop multi" data-zone="oA-val"></div></div>
+          </div>
+        </div>
+        <div>
+          <p class="dtitle">Objektdiagramm 2</p>
+          <div class="uml">
+            <div class="sec"><div class="lab">objektname : Klasse</div><div class="drop" data-zone="oB-head" data-single="1"></div></div>
+            <div class="sec"><div class="lab">Attributwerte</div><div class="drop multi" data-zone="oB-val"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="zonebox bin">
+        <h3 style="color:var(--bad)">Gehört nicht dazu</h3>
+        <div class="drop multi" data-zone="bin"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot" id="foot">
+    <button class="btn warn" id="btnSubmit">Abgeben</button>
+  </div>
+
+  <section class="protocol hidden" id="protocol"></section>
+</main>
+
+<!-- Startfenster -->
+<div class="overlay hidden" id="startDlg">
+  <div class="dialog">
+    <h2>Einstieg Stunde 3: Klasse und Objekt</h2>
+    <p>Ihr ordnet Karten den richtigen Stellen zu. Das ist eine Einzelarbeit.</p>
+    <label for="inName">Vor- und Nachname</label><input id="inName" autocomplete="off">
+    <label for="inKurs">Kurs</label><input id="inKurs" autocomplete="off" placeholder="z. B. Q1 Informatik GK">
+    <div class="notice"><b>Hinweis wie in einer Prüfung:</b> Diese Seite protokolliert den Start, die Bearbeitungsdauer, jedes Verlassen des Fensters oder Tabs, Neuladen, das Verlassen des Vollbilds und die Abgabe. Das Protokoll wird mit eurer Abgabe gespeichert. Es werden keine Daten ins Internet gesendet.</div>
+    <div class="row"><button class="btn" id="btnStart" disabled>Starten (Vollbild)</button></div>
+  </div>
+</div>
+
+<!-- Lehrkraft: Zurücksetzen -->
+<button id="btnTeach" class="teachlink" type="button">Lehrkraft</button>
+<div class="overlay hidden" id="teachDlg" style="z-index:70">
+  <div class="dialog">
+    <h2>Lehrkraft: Übung zurücksetzen</h2>
+    <p>Setzt die Bearbeitung in diesem Browser zurück. Der bisherige Stand und das Protokoll auf diesem Gerät werden gelöscht. Bereits heruntergeladene Abgabedateien bleiben erhalten.</p>
+    <label for="inPw">Passwort</label><input id="inPw" type="password" autocomplete="off">
+    <p id="pwMsg" style="color:var(--bad);min-height:1.2em;margin:6px 0 0"></p>
+    <div class="row"><button class="btn light" id="btnTeachCancel">Abbrechen</button><button class="btn warn" id="btnTeachOk">Zurücksetzen</button></div>
+  </div>
+</div>
+
+<!-- Abgabe bestätigen -->
+<div class="overlay hidden" id="confirmDlg">
+  <div class="dialog">
+    <h2>Wirklich abgeben?</h2>
+    <p id="confirmText"></p>
+    <p>Nach der Abgabe kann nichts mehr geändert werden. Es wird eine Abgabedatei heruntergeladen. <b>Gebt diese Datei ab</b>, wie es eure Lehrkraft sagt.</p>
+    <div class="row"><button class="btn light" id="btnCancel">Zurück</button><button class="btn warn" id="btnConfirm">Endgültig abgeben</button></div>
+  </div>
+</div>
+
+<script>
+(function () {
+'use strict';
+// Unveränderte Seite für die Abgabedatei merken, bevor irgendetwas verändert wird
+const PRISTINE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const STORE = 'mensaEinstieg.v1';
+const SALT = 'Burg-Mensa-2026';
+const PWSALT = 'Lk-Q1-Info', PWHASH = '082d272683429a';
+
+// ------------------------------------------------------------------
+// Karten: target = richtige Zone, owner = zu welchem Objekt (nur Werte/Köpfe)
+// ------------------------------------------------------------------
+const CARDS = [
+  // Definitionen
+  { id:'d1', t:'Bauplan: legt fest, welche Attribute und Methoden alle Dinge einer Art haben', k:'def' },
+  { id:'d2', t:'ein konkretes Ding nach einem Bauplan, mit eigenen Werten (Instanz)', k:'def' },
+  { id:'d3', t:'eine Variable, die zu einem Objekt gehört: was ein Objekt weiß', k:'def' },
+  { id:'d4', t:'eine Funktion, die zu einem Objekt gehört: was ein Objekt kann', k:'def' },
+  { id:'d5', t:'ein Text, der im Fenster des Programms angezeigt wird', k:'def' },
+  // Klassenname
+  { id:'n1', t:'Gericht', k:'cls clsname' },
+  { id:'n2', t:'spaghetti', k:'cls clsname' },
+  // Attribute
+  { id:'a1', t:'name: str', k:'cls' },
+  { id:'a2', t:'preis: float', k:'cls' },
+  { id:'a3', t:'kalorien: int', k:'cls' },
+  { id:'a4', t:'vegetarisch: bool', k:'cls' },
+  { id:'a5', t:'portionen: int', k:'cls' },
+  { id:'a6', t:'oeffnungszeiten: str', k:'cls' },
+  { id:'a7', t:'vegetarisch: str', k:'cls' },
+  { id:'a8', t:'preis: 3.80', k:'cls' },
+  { id:'a9', t:'lieblingsgericht: str', k:'cls' },
+  // Methoden
+  { id:'m1', t:'bestellen()', k:'cls' },
+  { id:'m2', t:'ist_verfuegbar()', k:'cls' },
+  { id:'m3', t:'nachkochen()', k:'cls' },
+  { id:'m4', t:'kasse_oeffnen()', k:'cls' },
+  { id:'m5', t:'speiseplan_drucken()', k:'cls' },
+  // Objektköpfe
+  { id:'h1', t:'spaghetti : Gericht', k:'obj head' },
+  { id:'h2', t:'curry : Gericht', k:'obj head' },
+  { id:'h3', t:'Gericht : curry', k:'obj head' },
+  // Attributwerte
+  { id:'s1', t:'name = "Spaghetti Bolognese"', k:'obj' },
+  { id:'s2', t:'preis = 3.80', k:'obj' },
+  { id:'s3', t:'kalorien = 720', k:'obj' },
+  { id:'s4', t:'vegetarisch = False', k:'obj' },
+  { id:'s5', t:'portionen = 25', k:'obj' },
+  { id:'c1', t:'name = "Gemüsecurry"', k:'obj' },
+  { id:'c2', t:'preis = 3.20', k:'obj' },
+  { id:'c3', t:'kalorien = 540', k:'obj' },
+  { id:'c4', t:'vegetarisch = True', k:'obj' },
+  { id:'c5', t:'portionen = 12', k:'obj' },
+  { id:'x1', t:'vegetarisch = vielleicht', k:'obj' },
+];
+// Zuordnungen verschlüsselt, damit die Lösung nicht im Quelltext steht
+const SOL = 'ChNeY1gNAzZ0HFcXHFE+G0RQCHRUElMTFnJYFX5BdlpWQxMAciEVRwgwVV0TW185DhUPTXRaHlETGA9WFwEJZVoIUWoYNh9RDgwiDEAYU08mWBsDT3RUElMTZ35aFUdZdEISKhNeNxwaTggiEF0VVBh+WhUBQXZaECwdGnAeAgFXdiMQE1hUcFYXAU96WBATVEkxEkVGBDQMEhRYVDdadlYeMRlQFB0aOR9eTQg4WFYUQxokE1JRTRQdVQNYXDQfFX5BdlpcQBMAciEVSEA4GV8UExZyWBUPTXRab10RGDxIFRlNDVpQGF8YfloVAUF2WlsCRRo3E1kDIjQSVxpFVDMXUg9NPR1bH1QaGRZWUB4zWm9dERgzSxUZTQ1aWVxQTiYIFQ9NdFoeURMYD1YXAQxkWghRahg5V1ZXGSRaHlETGH5aFQEwelgQEAIYaFpsAQZ7GUYFQxh+WhUBQXZaECwdGnAbAwFXdiMQGhxbJg5FAUF2WhBdERhwJxsDTzdNEEsRYXARGkIZIgoQXREYcFYXAU8LVBJTUAxwQBd4TzQRXFMdGnBYGwNPMR1asodIJlpNVh92NVcfQlt+WllKDj4MEgtEGjgfU0YAdj9XA1hZOg4VfkF2WlNGEwByIRVBBDhaHlETGH5aFUUMOgtRGVRIcj5WVwg4DEsBCxo4GxhNCD8WEhhCTnIYWEwBdCUeURNbalgNAzZ0GlsfExZyWBUPTXQvVwNFGiEOVlcZdjxTBVRUJgNHD00BHUAFVBohDlJLCDhYWxwRdTAQUkgZMhFTFkNbPxcVfkF2WlNIEwByIRVBBDhaHlETGH5aFUQIPruEA0UaKA8XRgQ4HUBRYV8gCVhNQXYWWxJZTnIAQk5NER1AGFJSJlhqD010FQNTCxoJWFwOADMMWlMdGnBYGwNPdCUeURNXYFgNAzZ0Ex8cVE46WBsDT3RUElMTZ35aFU5edEISKhNRfxdSVwV0VBJTExZyWBV+QXZaX0UTAHIhFUEEOFoeURMYfloVRAg+u4QDRRooD0UDJjcLQRQdGjAfWVYZLAwSGlRTPFp2VxkkEVAERRo3E1lGHnY/VwNYWToORAEwelgQHAQYaFpsAQ8/FhBdERhwVhcBDzMMQBhXXCZaU0YDdh9TH0tfPFpkUwg/C1cBXVs8VhdNBDUQRlFUUzxacEYfPxtaBRNnfloVS1x0QhIqE1V/ElJCCXRUElNCSjMdX0YZIhEQXREYcCcbA08+ShBLEWFwFRpLCDccEF0RGDEPRVEUdFQSUxNnfloVS150QhIqE1g7FBUPTXRaHlETTDcIQ0IYJRtaBQsaNwhEV00yHUBRflg4H1xXAzcVV10RXjMUWQMJPx0SOl1bIQlSATB6WBACABhoWmwBAnsOUx0TFnJYRFMMMRBXBUVTcFYXAU8LVBJTQghwQBd4TzlVRBBdGH5aFVAdNx9aFEVOO1gbA090JR5RE0lhWA0DNnQXHwdQVnBWFwEeJhlVGVROJhMVD010Wm9dERghThUZTQ1aXVxHWz5YGwNPJQhTFllfJg5eAUF2WhAsHRpwCQIBV3YjEB4cTDMWFQ9NdAtCEFZSNw5DSk96WBBTbBZyWFQST2xYaVNeFyQbWwFBdlpRBENIK1gbA090JR5RE1lgWA0DNnQXHwdQVnBWFwEOIwpACBMWclgVfkF2WlFCEwByIRVMQCAZXlMdGnAZQlEfL1oeURMYD1YXAQ5iWghRahg9V0FCAXRUElNSTyAITgFBdloQLB0acBkCAVd2IxAeHEwzFhUPTXQbRwNDQ3BWFwFPC1QSU0kLcEAXeE80EVxTHRpwWBsDTz0dWx8RbTMSRUsIPwxBBlRIJkAXTRgkWGYDRF9yFVNGH3Y+Ux1CX3AnSg==';
+(function () {
+  const key = 'q1:Rz7#mVx2', raw = atob(SOL), b = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) b[i] = raw.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+  const m = JSON.parse(new TextDecoder().decode(b));
+  for (const c of CARDS) { const v = m[c.id]; c.target = v[0]; if (v[1]) c.owner = v[1]; if (v[2]) c.why = v[2]; }
+})();
+const byId = Object.fromEntries(CARDS.map(c => [c.id, c]));
+
+// ------------------------------------------------------------------
+// Hilfen
+// ------------------------------------------------------------------
+const $ = s => document.querySelector(s);
+const zoneEl = z => document.querySelector(`[data-zone="${z}"]`);
+const now = () => Date.now();
+const pad = n => String(n).padStart(2, '0');
+const clock = ms => { const d = new Date(ms); return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`; };
+const dateStr = ms => { const d = new Date(ms); return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`; };
+const dur = ms => { const s = Math.max(0, Math.round(ms / 1000)); return `${pad(Math.floor(s / 60))}:${pad(s % 60)}`; };
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+function hash(str) { // cyrb53
+  let h1 = 0xdeadbeef, h2 = 0x41c6ce57;
+  for (let i = 0; i < str.length; i++) { const ch = str.charCodeAt(i); h1 = Math.imul(h1 ^ ch, 2654435761); h2 = Math.imul(h2 ^ ch, 1597334677); }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507); h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507); h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, '0');
+}
+const store = {
+  load() { try { return JSON.parse(localStorage.getItem(STORE) || 'null'); } catch (e) { return null; } },
+  save(s) { try { localStorage.setItem(STORE, JSON.stringify(s)); } catch (e) { /* ohne Speicher weiter */ } },
+  clear() { try { localStorage.removeItem(STORE); } catch (e) {} }
+};
+
+// ------------------------------------------------------------------
+// Zustand
+// ------------------------------------------------------------------
+let S = null;       // { name, kurs, opened, started, submitted, order, place:{id:zone}, zoneOrder:{zone:[ids]}, log:[], moves:[], away:{since,why}|null }
+let locked = false;
+
+function log(type, text, extra) { if (!S || locked) return; S.log.push({ t: now(), type, text, ...(extra || {}) }); store.save(S); }
+
+function newState() {
+  const order = CARDS.map(c => c.id);
+  for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+  return { name:'', kurs:'', opened: now(), started: null, submitted: null, order, zoneOrder: { pool: order.slice() }, log: [], moves: [], away: null };
+}
+
+// ------------------------------------------------------------------
+// Karten zeichnen und verschieben
+// ------------------------------------------------------------------
+function cardEl(c) {
+  const el = document.createElement('div');
+  el.className = 'card ' + c.k; el.dataset.id = c.id;
+  if (c.k.includes('head')) { const u = document.createElement('u'); u.textContent = c.t; el.appendChild(u); } else el.textContent = c.t;
+  el.addEventListener('pointerdown', startDrag);
+  return el;
+}
+function render() {
+  document.querySelectorAll('[data-zone]').forEach(z => z.innerHTML = '');
+  for (const [zone, ids] of Object.entries(S.zoneOrder)) {
+    const z = zoneEl(zone); if (!z) continue;
+    ids.forEach(id => z.appendChild(cardEl(byId[id])));
+  }
+}
+function zoneOf(id) { for (const [z, ids] of Object.entries(S.zoneOrder)) if (ids.includes(id)) return z; return 'pool'; }
+function moveCard(id, to) {
+  const from = zoneOf(id);
+  if (from === to) { render(); return; }
+  S.zoneOrder[from] = S.zoneOrder[from].filter(x => x !== id);
+  const target = zoneEl(to);
+  if (target && target.dataset.single && (S.zoneOrder[to] || []).length) {   // Feld besetzt: alte Karte zurück zu den Karten
+    const old = S.zoneOrder[to][0];
+    S.zoneOrder[to] = [];
+    (S.zoneOrder.pool = S.zoneOrder.pool || []).push(old);
+  }
+  (S.zoneOrder[to] = S.zoneOrder[to] || []).push(id);
+  S.moves.push({ t: now(), id, from, to });
+  store.save(S);
+  render();
+}
+
+let drag = null;
+function startDrag(e) {
+  if (locked || !S.started) return;
+  e.preventDefault();
+  const el = e.currentTarget, r = el.getBoundingClientRect();
+  drag = { el, id: el.dataset.id, dx: e.clientX - r.left, dy: e.clientY - r.top };
+  el.style.width = r.width + 'px';
+  el.classList.add('dragging');
+  document.body.appendChild(el);
+  posDrag(e);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', endDrag, { once: true });
+}
+function posDrag(e) { drag.el.style.left = (e.clientX - drag.dx) + 'px'; drag.el.style.top = (e.clientY - drag.dy) + 'px'; }
+let hoverZone = null;
+function zoneAt(x, y) { const el = document.elementFromPoint(x, y); return el ? el.closest('[data-zone]') : null; }
+let edgeTimer = null, lastPt = null;
+function edgeScroll() {   // Seite beim Ziehen am oberen/unteren Rand mitscrollen
+  if (!drag || !lastPt) return;
+  const y = lastPt.y, H = window.innerHeight;
+  const v = y > H - 70 ? Math.min(28, (y - (H - 70)) / 2 + 6) : y < 90 ? -Math.min(28, (90 - y) / 2 + 6) : 0;
+  if (v) { window.scrollBy(0, v); updateHover(lastPt.x, lastPt.y); }
+  edgeTimer = requestAnimationFrame(edgeScroll);
+}
+function updateHover(x, y) {
+  const z = zoneAt(x, y);
+  if (hoverZone && hoverZone !== z) hoverZone.classList.remove('hover');
+  if (z) z.classList.add('hover');
+  hoverZone = z;
+}
+function onMove(e) {
+  lastPt = { x: e.clientX, y: e.clientY };
+  if (!edgeTimer) edgeTimer = requestAnimationFrame(edgeScroll);
+  posDrag(e);
+  const z = zoneAt(e.clientX, e.clientY);
+  if (hoverZone && hoverZone !== z) hoverZone.classList.remove('hover');
+  if (z) z.classList.add('hover');
+  hoverZone = z;
+}
+function endDrag(e) {
+  window.removeEventListener('pointermove', onMove);
+  if (edgeTimer) cancelAnimationFrame(edgeTimer); edgeTimer = null; lastPt = null;
+  if (hoverZone) hoverZone.classList.remove('hover');
+  const z = zoneAt(e.clientX, e.clientY);
+  const id = drag.id;
+  drag.el.remove(); drag = null; hoverZone = null;
+  if (z) moveCard(id, z.dataset.zone); else render();
+}
+
+// ------------------------------------------------------------------
+// Auswertung
+// ------------------------------------------------------------------
+function evaluate(zoneOrder) {
+  const place = {};
+  for (const [z, ids] of Object.entries(zoneOrder)) ids.forEach(id => place[id] = z);
+  const headOf = { oA: (zoneOrder['oA-head'] || [])[0], oB: (zoneOrder['oB-head'] || [])[0] };
+  const res = {};
+  for (const c of CARDS) {
+    const z = place[c.id] || 'pool';
+    let ok = false;
+    if (c.target === 'o-head') ok = (z === 'oA-head' || z === 'oB-head');
+    else if (c.target === 'o-val') {
+      const m = z.match(/^(o[AB])-val$/);
+      ok = !!(m && headOf[m[1]] && byId[headOf[m[1]]].owner === c.owner);
+    } else ok = (z === c.target);
+    res[c.id] = { ok, zone: z };
+  }
+  const points = Object.values(res).filter(r => r.ok).length;
+  return { res, points, max: CARDS.length, open: (zoneOrder.pool || []).length };
+}
+function showMarks(ev) {
+  document.querySelectorAll('.card').forEach(el => {
+    const c = byId[el.dataset.id], r = ev.res[c.id];
+    el.classList.add(r.ok ? 'right' : 'wrong');
+    let why = '';
+    if (r.ok && c.target === 'bin') why = '✓ ' + c.why;
+    else if (!r.ok) {
+      if (c.target === 'bin') why = '✗ gehört nicht dazu: ' + c.why;
+      else if (c.target === 'o-val') why = '✗ gehört zu ' + c.owner;
+      else if (r.zone === 'pool') why = '✗ nicht zugeordnet';
+      else why = '✗ falsche Stelle';
+    }
+    if (why) { const s = document.createElement('span'); s.className = 'why'; s.textContent = why; el.appendChild(s); }
+  });
+}
+
+// ------------------------------------------------------------------
+// Protokoll
+// ------------------------------------------------------------------
+function summary(st, endT) {
+  const leaves = st.log.filter(l => l.type === 'weg');
+  const awayMs = st.log.filter(l => l.type === 'zurueck').reduce((a, l) => a + (l.ms || 0), 0);
+  return {
+    geoeffnet: st.opened, start: st.started, abgabe: endT,
+    dauer: st.started ? endT - st.started : 0,
+    verlassen: leaves.length, wegMs: awayMs,
+    neuGeladen: st.log.filter(l => l.type === 'reload').length,
+    vollbildVerlassen: st.log.filter(l => l.type === 'fs-aus').length,
+    bewegungen: st.moves.length,
+    pwFalsch: st.log.filter(l => l.type === 'pw').length
+  };
+}
+function protocolHTML(st, sm, ev, check) {
+  const rows = [
+    ['Name', esc(st.name)], ['Kurs', esc(st.kurs || '–')],
+    ['Datei geöffnet', `${dateStr(sm.geoeffnet)}, ${clock(sm.geoeffnet)} Uhr`],
+    ['Bearbeitung gestartet', sm.start ? `${clock(sm.start)} Uhr` : '–'],
+    ['Abgegeben', `${clock(sm.abgabe)} Uhr`],
+    ['Bearbeitungsdauer', `${dur(sm.dauer)} min`],
+    ['Fenster/Tab verlassen', `${sm.verlassen}-mal, zusammen ${dur(sm.wegMs)} min`, sm.verlassen > 0],
+    ['Seite neu geladen', `${sm.neuGeladen}-mal`, sm.neuGeladen > 0],
+    ['Vollbild verlassen', `${sm.vollbildVerlassen}-mal`, sm.vollbildVerlassen > 0],
+    ['Kartenbewegungen', String(sm.bewegungen)],
+    ['Falsches Lehrkraft-Passwort', `${sm.pwFalsch}-mal`, sm.pwFalsch > 0],
+    ['Ergebnis', `${ev.points} von ${ev.max} Karten richtig (${Math.round(100 * ev.points / ev.max)} %)${ev.open ? `, ${ev.open} nicht zugeordnet` : ''}`],
+  ];
+  if (check) rows.push(['Prüfsumme', check]);
+  const ev2 = st.log.map(l => `<tr${l.type === 'weg' || l.type === 'reload' || l.type === 'fs-aus' || l.type === 'pw' ? ' class="alarm"' : ''}><td>${clock(l.t)}</td><td>${st.started ? dur(l.t - st.started) : ''}</td><td>${esc(l.text)}</td></tr>`).join('');
+  const mv = st.moves.map(m => `<tr><td>${clock(m.t)}</td><td>${esc(byId[m.id].t)}</td><td>${esc(m.from)} → ${esc(m.to)}</td></tr>`).join('');
+  return `<h2>Protokoll</h2>
+    <table class="sum">${rows.map(r => `<tr${r[2] ? ' class="alarm"' : ''}><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('')}</table>
+    <details open><summary><b>Ereignisse</b> (${st.log.length})</summary><table><tr><th>Uhrzeit</th><th>seit Start</th><th>Ereignis</th></tr>${ev2}</table></details>
+    <details><summary><b>Alle Kartenbewegungen</b> (${st.moves.length})</summary><table><tr><th>Uhrzeit</th><th>Karte</th><th>von → nach</th></tr>${mv}</table></details>
+    <p style="font-size:12px;color:var(--muted);margin:8px 0 0">Das Protokoll erfasst, was der Browser meldet: Wechsel in ein anderes Fenster oder einen anderen Tab, Minimieren, Neuladen, Verlassen des Vollbilds. Ein zweites Gerät oder Hilfe von Mitschülern kann es nicht erkennen.</p>`;
+}
+
+// ------------------------------------------------------------------
+// Überwachung während der Bearbeitung
+// ------------------------------------------------------------------
+let unloading = false;
+function goneAway(why) { if (unloading || !S.started || locked || S.away) return; S.away = { since: now(), why }; log('weg', why); }
+function cameBack() {
+  if (!S.started || locked || !S.away) return;
+  const ms = now() - S.away.since; S.away = null;
+  log('zurueck', `zurück im Fenster (weg: ${dur(ms)} min)`, { ms });
+}
+function watch() {
+  window.addEventListener('blur', () => goneAway('Fenster verlassen (anderes Programm oder Fenster angeklickt)'));
+  window.addEventListener('focus', cameBack);
+  document.addEventListener('visibilitychange', () => document.hidden ? goneAway('Tab gewechselt oder Fenster minimiert') : cameBack());
+  document.addEventListener('fullscreenchange', () => {
+    if (!S.started || locked) return;
+    if (document.fullscreenElement) log('fs-an', 'Vollbild aktiv');
+    else log('fs-aus', 'Vollbild verlassen');
+  });
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => log('resize', `Fenstergröße geändert auf ${innerWidth} × ${innerHeight}`), 700); });
+  document.addEventListener('contextmenu', e => { if (S.started && !locked) { e.preventDefault(); log('info', 'Rechtsklick versucht'); } });
+  window.addEventListener('beforeunload', () => { unloading = true; if (S.started && !locked) { S.log.push({ t: now(), type: 'info', text: 'Seite wird geschlossen oder neu geladen' }); store.save(S); } });
+}
+let tick;
+function startTimer() { clearInterval(tick); tick = setInterval(() => { $('#timer').textContent = dur(now() - S.started); }, 1000); $('#timer').textContent = dur(now() - S.started); }
+
+// ------------------------------------------------------------------
+// Abgabe: gesperrte HTML-Datei erzeugen
+// ------------------------------------------------------------------
+function submit() {
+  cameBack();
+  const endT = now();
+  S.submitted = endT;
+  S.log.push({ t: endT, type: 'abgabe', text: 'abgegeben' });
+  const ev = evaluate(S.zoneOrder);
+  const sm = summary(S, endT);
+  const payload = JSON.stringify({ name: S.name, kurs: S.kurs, opened: S.opened, started: S.started, submitted: endT,
+    zoneOrder: S.zoneOrder, log: S.log, moves: S.moves, points: ev.points, max: ev.max });
+  const sum = hash(payload + SALT);
+  S.file = { payload, sum };
+  store.save(S);
+  lockView(S, ev, sm, sum, false);
+  download(payload, sum);
+}
+function download(payload, sum) {
+  const data = JSON.stringify({ payload, sum }).replace(/</g, '\\u003c');
+  const html = PRISTINE.replace('<script id="abgabe" type="application/json"><\/script>', `<script id="abgabe" type="application/json">${data}<\/script>`);
+  const blob = new Blob([html], { type: 'text/html' });
+  const a = document.createElement('a');
+  const safe = (S.name || 'ohne_Name').replace(/[^A-Za-zÄÖÜäöüß0-9]+/g, '_').replace(/^_|_$/g, '');
+  const d = new Date(S.submitted);
+  a.href = URL.createObjectURL(blob);
+  a.download = `Abgabe_Mensa_${safe}_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}.html`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+function lockView(st, ev, sm, sum, frozen) {
+  locked = true;
+  clearInterval(tick);
+  document.body.classList.add('locked');
+  $('#foot').classList.add('hidden');
+  $('#who').textContent = `${st.name}${st.kurs ? ' · ' + st.kurs : ''}`;
+  $('#timer').textContent = dur(sm.dauer);
+  render(); showMarks(ev);
+  const r = $('#result');
+  r.classList.remove('hidden');
+  r.innerHTML = `<div class="score">${ev.points} von ${ev.max} Karten richtig</div>
+    <div>${frozen ? 'Abgabedatei' : 'Abgegeben'} am ${dateStr(sm.abgabe)} um ${clock(sm.abgabe)} Uhr · Bearbeitungsdauer ${dur(sm.dauer)} min.
+    Grün = richtig, Rot = falsch. Unter jeder Karte steht der Grund.</div>
+    ${frozen ? '' : '<div style="margin-top:8px"><b>Die Abgabedatei wurde heruntergeladen.</b> Gebt sie ab. <button class="btn light" id="btnAgain" style="padding:4px 12px;margin-left:8px">Abgabedatei erneut herunterladen</button></div>'}`;
+  const again = $('#btnAgain'); if (again) again.onclick = () => download(st.file.payload, st.file.sum);
+  const p = $('#protocol'); p.classList.remove('hidden'); p.innerHTML = protocolHTML(st, sm, ev, sum);
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  window.scrollTo(0, 0);
+}
+
+// ------------------------------------------------------------------
+// Start
+// ------------------------------------------------------------------
+function init() {
+  // 1) Abgabedatei? Dann nur anzeigen
+  const frozenRaw = $('#abgabe').textContent.trim();
+  if (frozenRaw) {
+    let f, st, okSum = false;
+    try { f = JSON.parse(frozenRaw); st = JSON.parse(f.payload); okSum = hash(f.payload + SALT) === f.sum; } catch (e) { st = null; }
+    $('#btnTeach').classList.add('hidden');
+    const b = $('#frozenBanner'); b.classList.remove('hidden');
+    if (!st) { b.classList.add('bad'); b.textContent = 'Diese Abgabedatei ist beschädigt und kann nicht gelesen werden.'; return; }
+    b.classList.add(okSum ? 'ok' : 'bad');
+    b.textContent = okSum ? '✓ Festgeschriebene Abgabe · Prüfsumme stimmt: Lösung und Protokoll wurden nach der Abgabe nicht verändert.'
+                          : '✗ Achtung: Die Prüfsumme stimmt nicht. Die Datei wurde nach der Abgabe verändert.';
+    S = { ...st, file: f };
+    lockView(S, evaluate(st.zoneOrder), summary(st, st.submitted), f.sum + (okSum ? ' ✓' : ' ✗ verändert'), true);
+    return;
+  }
+  // 3) Gespeicherten Stand fortsetzen oder neu beginnen
+  S = store.load();
+  watch();
+  if (S && S.submitted) {
+    lockView(S, evaluate(S.zoneOrder), summary(S, S.submitted), S.file ? S.file.sum : '', false);
+    return;
+  }
+  if (S && S.started) {
+    if (S.away) { const ms = now() - S.away.since; S.log.push({ t: now(), type: 'zurueck', text: `zurück (weg: ${dur(ms)} min)`, ms }); S.away = null; }
+    S.log.push({ t: now(), type: 'reload', text: 'Seite neu geladen, Stand wiederhergestellt' });
+    store.save(S);
+    $('#who').textContent = `${S.name}${S.kurs ? ' · ' + S.kurs : ''}`;
+    render(); startTimer();
+    return;
+  }
+  S = S || newState();
+  store.save(S);
+  render();
+  const dlg = $('#startDlg'), inN = $('#inName'), btn = $('#btnStart');
+  dlg.classList.remove('hidden');
+  inN.addEventListener('input', () => btn.disabled = inN.value.trim().length < 3);
+  inN.focus();
+  btn.onclick = () => {
+    S.name = inN.value.trim(); S.kurs = $('#inKurs').value.trim();
+    S.started = now();
+    S.log.push({ t: S.opened, type: 'info', text: 'Datei geöffnet' });
+    S.log.push({ t: S.started, type: 'start', text: `Bearbeitung gestartet (${S.name})` });
+    store.save(S);
+    dlg.classList.add('hidden');
+    $('#who').textContent = `${S.name}${S.kurs ? ' · ' + S.kurs : ''}`;
+    const el = document.documentElement;
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => log('info', 'Vollbild nicht möglich'));
+    startTimer();
+  };
+}
+$('#btnSubmit').onclick = () => {
+  const open = (S.zoneOrder.pool || []).length;
+  $('#confirmText').textContent = open ? `Es liegen noch ${open} Karten unter „Karten“. Nicht zugeordnete Karten zählen als falsch.` : 'Alle Karten sind zugeordnet.';
+  $('#confirmDlg').classList.remove('hidden');
+};
+$('#btnCancel').onclick = () => $('#confirmDlg').classList.add('hidden');
+$('#btnTeach').onclick = () => { $('#pwMsg').textContent = ''; $('#inPw').value = ''; $('#teachDlg').classList.remove('hidden'); $('#inPw').focus(); };
+$('#btnTeachCancel').onclick = () => $('#teachDlg').classList.add('hidden');
+function teachReset() {
+  if (hash($('#inPw').value + PWSALT) === PWHASH) { store.clear(); location.reload(); return; }
+  $('#pwMsg').textContent = 'Falsches Passwort.';
+  if (S && S.started && !locked) log('pw', 'Zurücksetzen mit falschem Passwort versucht');
+}
+$('#btnTeachOk').onclick = teachReset;
+$('#inPw').addEventListener('keydown', e => { if (e.key === 'Enter') teachReset(); });
+$('#btnConfirm').onclick = () => { $('#confirmDlg').classList.add('hidden'); submit(); };
+init();
+})();
+</script>
+</body>
+</html>
