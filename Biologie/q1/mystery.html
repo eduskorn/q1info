@@ -364,7 +364,7 @@ window.addEventListener('error',function(e){if(window.__boardStarted)return;wind
   <textarea id="editArea" class="dlg-field"></textarea>
   <div class="chips" id="editChips"></div>
   <p class="dlg-hint" id="editHint"></p>
-  <div class="dlg-actions"><button class="tbtn" id="editCancel">Abbrechen</button><button class="tbtn primary" id="editSave">Speichern</button></div>
+  <div class="dlg-actions"><button class="tbtn" id="editCancel">Abbrechen</button><button class="tbtn" id="editKeep" hidden>Ohne Beschriftung</button><button class="tbtn primary" id="editSave">Speichern</button></div>
 </dialog>
 
 <dialog id="askDialog">
@@ -388,6 +388,7 @@ window.addEventListener('error',function(e){if(window.__boardStarted)return;wind
   <h3>Auswählen, bearbeiten, löschen</h3>
   <ul>
     <li>Ein ausgewähltes Element zeigt oben eine Leiste mit <b>Bearbeiten</b>, <b>Löschen</b> und – bei Pfeilen – <b>Umdrehen</b>.</li>
+    <li>Beim Platzieren von Pfeil, Gruppe, Notiz oder Text öffnet sich ein Fenster: <b>Abbrechen</b> (oder <kbd>Esc</kbd>) nimmt das neue Element wieder weg.</li>
     <li>Text direkt bearbeiten: am Computer <b>doppelklicken</b>, am iPad das ausgewählte Element <b>noch einmal antippen</b>.</li>
     <li>Hinweiskarten werden nicht gelöscht, sondern <b>zurück in den Stapel</b> gelegt.</li>
     <li>Größe ändern: am weißen Punkt unten rechts eines ausgewählten Elements ziehen.</li>
@@ -941,8 +942,11 @@ function openEditor(id,opts){
   const chips=kind==='arrow'&&Array.isArray(KONFIGURATION.pfeilVorschlaege)?KONFIGURATION.pfeilVorschlaege.filter(s=>typeof s==='string'&&s.trim()):[];
   $('editChips').innerHTML=chips.map(c=>`<button class="chip" type="button" data-chip="${esc(c)}">${esc(c)}</button>`).join('');
   $('editHint').textContent=single?'Enter = speichern':(COARSE?'':'Strg + Enter = speichern');
-  $('editCancel').textContent=isNew&&kind==='arrow'?'Ohne Beschriftung':'Abbrechen';
-  editing={id,kind,isNew,field};
+  // Neu platzierte Elemente: „Abbrechen“ nimmt die Platzierung zurück; Pfeile und Gruppen dürfen auch unbeschriftet bleiben
+  $('editCancel').textContent='Abbrechen';
+  const keepLabel=isNew?{arrow:'Ohne Beschriftung',box:'Ohne Namen'}[kind]:null;
+  $('editKeep').hidden=!keepLabel;if(keepLabel)$('editKeep').textContent=keepLabel;
+  editing={id,kind,isNew,field,entry:isNew?undoStack[undoStack.length-1]:null};
   openDlg($('editDialog'));
   field.focus();try{field.setSelectionRange(field.value.length,field.value.length);}catch(err){}
 }
@@ -956,7 +960,21 @@ function saveEditor(){
   editing=null;closeDlg($('editDialog'));renderAll();select(id);
 }
 $('editSave').onclick=saveEditor;
-$('editCancel').onclick=()=>closeDlg($('editDialog'));
+function cancelEditor(){
+  const ed=editing;editing=null;closeDlg($('editDialog'));
+  if(!ed||!ed.isNew)return;
+  // Platzierung zurücknehmen: der Erstellen-Schritt verschwindet auch aus dem Verlauf
+  if(ed.entry&&undoStack[undoStack.length-1]===ed.entry){undoStack.pop();restore(ed.entry.snap);}
+  else{const keep=x=>x.id!==ed.id;state.arrows=state.arrows.filter(keep);state.notes=state.notes.filter(keep);state.boxes=state.boxes.filter(keep);}
+  if(!itemById(state.selected)&&!arrowById(state.selected))state.selected=null;
+  updateUndoButtons();scheduleSave();renderAll();
+  toast(ed.kind==='arrow'?'Pfeil abgebrochen.':NAMES[ed.kind]+' nicht platziert.');
+}
+function keepEditor(){const ed=editing;editing=null;closeDlg($('editDialog'));if(ed){renderAll();select(ed.id);}}
+$('editCancel').onclick=cancelEditor;
+$('editKeep').onclick=keepEditor;
+// Esc im Bearbeiten-Fenster wirkt wie „Abbrechen“
+$('editDialog').addEventListener('cancel',e=>{e.preventDefault();cancelEditor();});
 $('editDialog').addEventListener('close',()=>{if(!isOpen($('editDialog')))editing=null;});   // verspätete close-Events früherer Sitzungen ignorieren
 $('editInput').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();e.stopPropagation();saveEditor();}});
 $('editArea').addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();e.stopPropagation();saveEditor();}});
@@ -1013,7 +1031,7 @@ function toast(msg,withUndo){
 
 /* ---------- Tastatur ---------- */
 window.addEventListener('keydown',e=>{
-  if(anyDialogOpen()){if(!HAS_DIALOG&&e.key==='Escape')document.querySelectorAll('dialog[open]').forEach(closeDlg);return;}
+  if(anyDialogOpen()){if(!HAS_DIALOG&&e.key==='Escape'){if(isOpen($('editDialog')))cancelEditor();document.querySelectorAll('dialog[open]').forEach(closeDlg);}return;}
   const t=e.target,td=t.closest&&t.closest('dialog');if(t.matches&&t.matches('input,textarea,select,[contenteditable="true"]')&&!(td&&!isOpen(td)))return;
   const mod=e.ctrlKey||e.metaKey,k=(e.key||'').toLowerCase();
   if(mod&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}
