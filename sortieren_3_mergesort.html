@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mergesort – Ablauf, Laufzeit, Python</title>
+<style>
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --panel2:#f7f9fb; --bd:#d9dee6;
+  --tx:#16202b; --mut:#67727f; --acc:#2563eb;
+  --cmp:#f59e0b; --swp:#ef4444; --don:#22c55e; --min:#8b5cf6; --key:#0ea5e9; --mov:#14b8a6;
+  --code-bg:#f7f9fb; --hl:#fff3cd; --hl-bd:#f0b429;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#12161c; --panel:#1a2029; --panel2:#141a22; --bd:#2c3644;
+         --tx:#e6ebf2; --mut:#94a3b3; --acc:#60a5fa;
+         --code-bg:#141a22; --hl:#3a3110; --hl-bd:#c48f14; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 16px 34px}
+h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{font-size:13px;color:var(--mut);margin-top:2px}
+.topbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:4px}
+.tab{border:0;background:transparent;color:var(--mut);font:inherit;font-weight:600;font-size:14.5px;
+  padding:8px 16px;border-radius:7px;cursor:pointer}
+.tab:hover{color:var(--tx)}
+.tab.on{background:var(--acc);color:#fff}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 10px;font-weight:700}
+.panel h3{font-size:16px;margin:18px 0 6px;font-weight:650}
+.panel h3:first-child{margin-top:0}
+p{margin:8px 0}
+.page{display:none}
+.page.on{display:block}
+
+/* Steuerung */
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button.b{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--bd);background:var(--panel);
+  color:var(--tx);border-radius:8px;padding:8px 13px;cursor:pointer}
+button.b:hover{border-color:var(--acc);color:var(--acc)}
+button.b:disabled{opacity:.4;cursor:default;border-color:var(--bd);color:var(--mut)}
+button.b.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.b.pri:hover{filter:brightness(1.08);color:#fff}
+input[type=text]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;
+  background:var(--panel);color:var(--tx);width:230px}
+.spacer{flex:1}
+.speed{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+input[type=range]{accent-color:var(--acc);width:110px}
+input[type=number]{font:inherit;font-size:14px;width:58px;padding:6px;border:1px solid var(--bd);
+  border-radius:7px;background:var(--panel);color:var(--tx)}
+
+/* Balken */
+.vis{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:200px;padding:6px 4px 0}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.val{font-size:13px;font-weight:700;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.bar{width:100%;border-radius:7px 7px 3px 3px;background:#9aa7b8;
+  transition:height .18s ease,background .18s ease;border:2px solid transparent}
+@media (prefers-color-scheme: dark){ .bar{background:#48566a} }
+.idx{font-size:11.5px;color:var(--mut);margin-top:5px;font-variant-numeric:tabular-nums}
+.col.L .bar{background:var(--key)}
+.col.R .bar{background:var(--mov)}
+.col.W .bar{background:var(--don);border-color:var(--don)}
+.col.done .bar{background:var(--don)}
+.col.act .idx{color:var(--tx);font-weight:700}
+
+/* Operationsanzeige */
+.op{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
+.badge{font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--panel2);
+  border:1px solid var(--bd);color:var(--mut);white-space:nowrap}
+.badge.cmp{background:var(--cmp);border-color:var(--cmp);color:#3a2600}
+.badge.don{background:var(--don);border-color:var(--don);color:#062d15}
+.badge.key{background:var(--key);border-color:var(--key);color:#012738}
+.badge.mov{background:var(--mov);border-color:var(--mov);color:#04302c}
+.optxt{font-size:15px;font-weight:500;flex:1 1 300px}
+.count{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* Rekursionsbaum */
+.tree{display:flex;flex-direction:column;gap:7px}
+.lvl{display:grid;gap:6px;align-items:stretch}
+.lvlrow{display:grid;grid-template-columns:78px 1fr;gap:10px;align-items:center}
+.lvltag{font-size:11.5px;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.node{border:1px solid var(--bd);border-radius:8px;padding:4px 3px;background:var(--panel2);
+  display:grid;grid-template-columns:repeat(var(--c,1),minmax(0,1fr));gap:3px;min-height:30px;align-items:center;
+  transition:border-color .15s, background .15s}
+.node.idle{opacity:.22}
+.node.active{border-color:var(--acc);background:rgba(37,99,235,.07)}
+.node.split{border-color:var(--acc);border-style:dashed}
+.node.merging{border-color:var(--cmp);background:rgba(245,158,11,.10)}
+.node.sorted{border-color:var(--don);background:rgba(34,197,94,.10)}
+.node.spent{border-color:var(--don);opacity:.45}
+.chip{min-width:0;text-align:center;font:600 12.5px ui-monospace,Consolas,monospace;
+  padding:2px 2px;border-radius:5px;background:var(--panel);border:1px solid var(--bd)}
+.chip.empty{border-style:dashed;color:transparent;background:transparent}
+.chip.front{background:var(--cmp);border-color:var(--cmp);color:#3a2600}
+.chip.used{opacity:.25}
+.chip.fresh{background:var(--don);border-color:var(--don);color:#062d15}
+
+/* Tabellen */
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:8px}
+th,td{border-bottom:1px solid var(--bd);padding:7px 9px;text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);font-weight:700;text-align:right}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:var(--panel2)}
+.mini{display:inline-block;height:9px;border-radius:3px;background:var(--acc);vertical-align:0;margin-left:6px}
+
+/* Code */
+.code{background:var(--code-bg);border:1px solid var(--bd);border-radius:9px;padding:9px 0;overflow-x:auto}
+.line{display:flex;gap:10px;padding:2px 12px;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+  font-size:13.5px;white-space:pre;border-left:3px solid transparent}
+.line.on{background:var(--hl);border-left-color:var(--hl-bd)}
+.ln{color:var(--mut);opacity:.6;user-select:none;min-width:18px;text-align:right}
+.kw{color:#a626a4;font-weight:600}
+.fn{color:#4078f2}
+.nm{color:#986801}
+.cm{color:#7f8c98;font-style:italic}
+@media (prefers-color-scheme: dark){ .kw{color:#c678dd} .fn{color:#61afef} .nm{color:#d19a66} .cm{color:#7f8c98} }
+.trace{background:var(--code-bg);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;
+  font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre;overflow-x:auto;min-height:120px}
+.tl{padding:1px 0}
+.tl.call{color:var(--acc)}
+.tl.ret{color:#188038}
+@media (prefers-color-scheme: dark){ .tl.ret{color:#6ee7a0} }
+.tl.merge{color:#9a6400}
+@media (prefers-color-scheme: dark){ .tl.merge{color:var(--cmp)} }
+.tl.dim{opacity:.45}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid2>*{min-width:0}
+@media (max-width:980px){ .grid2{grid-template-columns:1fr} }
+.box{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;font-size:14px}
+.box b{color:var(--acc)}
+.kpi{display:flex;flex-wrap:wrap;gap:10px;margin:10px 0}
+.kpi div{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:8px 13px;font-size:13px;color:var(--mut)}
+.kpi div b{display:block;font-size:20px;color:var(--tx);font-variant-numeric:tabular-nums}
+ol,ul{margin:8px 0;padding-left:22px}
+li{margin-bottom:6px}
+.formel{font-family:ui-monospace,Consolas,monospace;background:var(--panel2);border:1px solid var(--bd);
+  border-radius:7px;padding:8px 11px;display:inline-block;margin:6px 0;font-size:14px}
+svg text{fill:var(--mut);font-size:11px;font-family:system-ui,sans-serif}
+.optionen{display:flex;flex-wrap:wrap;gap:18px;align-items:center;margin-top:12px;font-size:13px;color:var(--mut)}
+.optionen label{display:flex;gap:6px;align-items:center;cursor:pointer}
+input[type=checkbox]{accent-color:var(--acc);width:16px;height:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" style="display:inline-block;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--acc);text-decoration:none">&larr; &Uuml;bersicht</a>
+
+  <div class="topbar">
+    <div>
+      <h1>Mergesort</h1>
+      <div class="sub">Teile und herrsche &ndash; Ablauf, Rekursionsbaum, Laufzeit und Python-Code</div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-page="p1">1 &middot; Ablauf</button>
+      <button class="tab" data-page="p2">2 &middot; Laufzeit</button>
+      <button class="tab" data-page="p3">3 &middot; Python</button>
+    </div>
+  </div>
+
+<!-- ============ SEITE 1: ABLAUF ============ -->
+<div class="page on" id="p1">
+  <div class="panel">
+    <div class="ctrl">
+      <button class="b pri" id="play">&#9654; Abspielen</button>
+      <button class="b" id="prev">&#9198; Zur&uuml;ck</button>
+      <button class="b" id="next">&#9197; Schritt</button>
+      <button class="b" id="reset">&#8635; Zur&uuml;cksetzen</button>
+      <span class="speed">Tempo <input type="range" id="speed" min="1" max="10" value="6"></span>
+      <span class="speed">Anzahl n <input type="number" id="anz" min="2" max="16" value="8"></span>
+      <span class="spacer"></span>
+      <input type="text" id="inp" placeholder="2 bis 16 Zahlen, z. B. 34 7 91 12">
+      <button class="b" id="use">&Uuml;bernehmen</button>
+      <button class="b" id="rnd">Neue Zahlen</button>
+      <button class="b" id="best" title="Best Case">&#8593; sortiert</button>
+      <button class="b" id="worst" title="Worst Case">&#8595; umgekehrt</button>
+    </div>
+
+    <div class="vis" id="vis"></div>
+
+    <div class="op">
+      <span class="badge" id="badge">Start</span>
+      <span class="optxt" id="optxt">&mdash;</span>
+      <span class="count" id="stats"></span>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--key)"></i>linke Teilliste</span>
+      <span><i style="background:var(--mov)"></i>rechte Teilliste</span>
+      <span><i style="background:var(--don)"></i>gerade geschrieben / fertig sortiert</span>
+      <span><i style="background:var(--cmp)"></i>vorderstes Element beim Vergleich</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Rekursionsbaum</h2>
+    <div class="tree" id="tree"></div>
+    <div class="optionen">
+      <span>Tastatur: Leertaste = Start/Pause, &#8592; und &#8594; = einzelne Schritte</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Beobachtungsauftrag</h2>
+    <ol>
+      <li>Z&auml;hle die Ebenen des Baums f&uuml;r n = 8 und f&uuml;r n = 16. Wie viele Ebenen kommen dazu, wenn sich n verdoppelt?</li>
+      <li>Sieh dir eine einzelne Ebene an: Wie viele Zahlen werden auf dieser Ebene insgesamt verschmolzen? Vergleiche das mit n.</li>
+      <li>Dr&uuml;cke &bdquo;&#8593; sortiert&ldquo; und dann &bdquo;&#8595; umgekehrt&ldquo;. Wie ver&auml;ndern sich die Vergleiche? Wie ver&auml;ndert sich die Anzahl der Schritte insgesamt? Was f&auml;llt dir auf?</li>
+      <li>Suche einen Schritt, bei dem der Rest einer Teilliste ohne Vergleich angeh&auml;ngt wird. Wann passiert das?</li>
+      <li>Mergesort braucht f&uuml;r das Verschmelzen Platz f&uuml;r eine zweite Liste. Erkl&auml;re, warum das bei Bubble Sort nicht n&ouml;tig war.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============ SEITE 2: LAUFZEIT ============ -->
+<div class="page" id="p2">
+  <div class="panel">
+    <h2>Die Idee: Teile und herrsche</h2>
+    <p>Mergesort besteht aus zwei Teilen, die getrennt betrachtet werden m&uuml;ssen:</p>
+    <div class="grid2">
+      <div class="box"><b>Teilen</b> kostet fast nichts. Die Liste wird in der Mitte durchgeschnitten &ndash; dazu muss nichts verglichen werden.</div>
+      <div class="box"><b>Verschmelzen</b> kostet Arbeit. Zwei sortierte Listen der Gesamtl&auml;nge <i>k</i> zu einer sortierten Liste zu verbinden, braucht h&ouml;chstens <i>k&nbsp;&minus;&nbsp;1</i> Vergleiche, denn jeder Vergleich setzt genau eine Zahl endg&uuml;ltig.</div>
+    </div>
+
+    <h3>Herleitung in zwei Schritten</h3>
+    <p><b>1. Wie viele Ebenen hat der Baum?</b> Jede Ebene halbiert die L&auml;nge der Teillisten: n &rarr; n/2 &rarr; n/4 &rarr; &hellip; &rarr; 1.
+    Die Frage &bdquo;Wie oft kann ich n halbieren, bis 1 &uuml;brig bleibt?&ldquo; ist genau die Definition des Logarithmus zur Basis&nbsp;2.</p>
+    <div class="formel">Anzahl Ebenen = log&#8322;(n) &nbsp;&nbsp;&rarr;&nbsp;&nbsp; n = 8 &rarr; 3 Ebenen &nbsp;|&nbsp; n = 1024 &rarr; 10 Ebenen</div>
+    <p><b>2. Was kostet eine Ebene?</b> Auf jeder Ebene wird jede der n Zahlen genau einmal angefasst &ndash; egal, ob sie in vielen kleinen oder wenigen gro&szlig;en Verschmelzungen steckt. Eine Ebene kostet also rund n Operationen.</p>
+    <div class="formel">Gesamtaufwand &asymp; (Kosten pro Ebene) &times; (Anzahl Ebenen) = n &middot; log&#8322;(n)</div>
+
+    <h3>Best Case und Worst Case</h3>
+    <p>Der entscheidende Punkt: <b>Mergesort teilt immer exakt in der Mitte</b> &ndash; unabh&auml;ngig davon, welche Zahlen in der Liste stehen. Die Form des Baums h&auml;ngt nur von n ab, nie von den Daten. Damit gibt es keine &bdquo;ung&uuml;nstige Eingabe&ldquo;:</p>
+    <ul>
+      <li><b>Worst Case:</b> Bei jedem Verschmelzen wechseln sich beide Teillisten ab, jede Zahl kostet einen Vergleich &rarr; etwa <b>n&nbsp;&middot;&nbsp;log&#8322;(n)</b> Vergleiche.</li>
+      <li><b>Best Case:</b> Eine Teilliste ist komplett kleiner als die andere, der Rest wird ohne Vergleich angeh&auml;ngt &rarr; etwa <b>&frac12;&nbsp;&middot;&nbsp;n&nbsp;&middot;&nbsp;log&#8322;(n)</b> Vergleiche.</li>
+      <li>Beides unterscheidet sich nur um den Faktor 2. In beiden F&auml;llen gilt <b>O(n&nbsp;log&nbsp;n)</b>.</li>
+    </ul>
+    <div class="box" style="margin-top:10px">Vorsicht vor einem naheliegenden Irrtum: Die <b>umgekehrt sortierte</b> Liste ist bei Mergesort <b>kein</b> Worst Case,
+    sondern ebenfalls ein Best Case &ndash; bei jedem Verschmelzen ist eine Teilliste komplett kleiner als die andere.
+    Probiere es auf Seite&nbsp;1 mit &bdquo;&#8593; sortiert&ldquo; und &bdquo;&#8595; umgekehrt&ldquo; aus: dieselbe Vergleichszahl.
+    Der echte Worst Case ist eine <i>verzahnte</i> Folge, bei der beim Verschmelzen immer abwechselnd links und rechts zugegriffen wird
+    (z.&nbsp;B. 1&nbsp;5&nbsp;3&nbsp;7&nbsp;2&nbsp;6&nbsp;4&nbsp;8). Er muss regelrecht konstruiert werden &ndash; und kostet trotzdem nur den Faktor&nbsp;2.</div>
+    <div class="box" style="margin-top:10px">Merksatz: Mergesort ist <b>zuverl&auml;ssig</b>. Es gibt keine Zahlenfolge, bei der das Verfahren pl&ouml;tzlich quadratisch wird. Genau darin unterscheidet es sich von Quicksort.</div>
+  </div>
+
+  <div class="panel">
+    <h2>Gemessen: Vergleiche bei wachsendem n</h2>
+    <p>Die Werte werden beim &Ouml;ffnen dieser Seite tats&auml;chlich berechnet, indem Mergesort auf Listen der jeweiligen L&auml;nge ausgef&uuml;hrt und jeder Vergleich mitgez&auml;hlt wird.</p>
+    <div class="tblwrap"><table id="tab"></table></div>
+    <p style="font-size:13px;color:var(--mut)">Die letzte Spalte ist der Quotient <i>Worst-Case-Vergleiche &divide; (n&nbsp;&middot;&nbsp;log&#8322;n)</i>. Dass er &uuml;ber alle Zeilen ungef&auml;hr gleich bleibt, ist der eigentliche Beleg daf&uuml;r, dass n&nbsp;&middot;&nbsp;log&nbsp;n die richtige Wachstumsordnung ist. Zum Vergleich: Bei n&sup2;/2 w&uuml;rde sich dieser Quotient mit jeder Zeile fast verdoppeln.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Mergesort gegen die einfachen Verfahren</h2>
+    <div id="chart"></div>
+    <p style="font-size:13px;color:var(--mut)">Zum Vergleich: Bubble, Insertion und Selection Sort brauchen im Worst Case etwa n&sup2;/2 Vergleiche.</p>
+    <h3>Aufgaben</h3>
+    <ol>
+      <li>Berechne mit der Tabelle: Wie viele Vergleiche spart Mergesort bei n = 1024 gegen&uuml;ber n&sup2;/2?</li>
+      <li>Ein Rechner schafft 10&nbsp;Millionen Vergleiche pro Sekunde. Sch&auml;tze die Laufzeit f&uuml;r n = 1&nbsp;000&nbsp;000 f&uuml;r beide Verfahren.</li>
+      <li>Begr&uuml;nde in zwei S&auml;tzen, warum Mergesort keinen &bdquo;b&ouml;sen&ldquo; Spezialfall hat.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============ SEITE 3: PYTHON ============ -->
+<div class="page" id="p3">
+  <div class="panel">
+    <h2>Python &ndash; einfache Variante mit Teillisten</h2>
+    <p>Diese Umsetzung erzeugt bei jedem Aufruf neue Listen. Das ist etwas speicherhungriger als die Lehrbuchversion mit Indizes, daf&uuml;r liest sie sich fast wie die Beschreibung des Verfahrens.</p>
+    <div class="grid2">
+      <div>
+        <div class="code" id="code1"></div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Zeile f&uuml;r Zeile</h3>
+        <ul style="font-size:14px">
+          <li><b>Zeile 2&ndash;3:</b> Abbruchbedingung der Rekursion. Eine Liste mit 0 oder 1 Element ist bereits sortiert und wird unver&auml;ndert zur&uuml;ckgegeben. <i>Ohne diese Zeilen l&auml;uft das Programm endlos.</i></li>
+          <li><b>Zeile 5:</b> <span class="nm">//</span> ist die Ganzzahldivision. Bei ungeradem n ist eine H&auml;lfte um 1 l&auml;nger &ndash; das st&ouml;rt nicht.</li>
+          <li><b>Zeile 6&ndash;7:</b> <span class="nm">liste[:mitte]</span> ist die vordere H&auml;lfte, <span class="nm">liste[mitte:]</span> die hintere. Beide werden durch den <i>rekursiven Aufruf</i> sortiert zur&uuml;ckgegeben.</li>
+          <li><b>Zeile 9:</b> Erst jetzt wird verglichen &ndash; die ganze Arbeit steckt in <span class="fn">verschmelze</span>.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Die Hilfsfunktion <span class="fn">verschmelze</span></h3>
+    <div class="grid2">
+      <div><div class="code" id="code2"></div></div>
+      <div>
+        <ul style="font-size:14px;margin-top:0">
+          <li><b>Zeile 2&ndash;4:</b> <span class="nm">ergebnis</span> ist die neue Liste, <span class="nm">i</span> und <span class="nm">j</span> zeigen jeweils auf das vorderste noch nicht benutzte Element.</li>
+          <li><b>Zeile 6:</b> Die Schleife l&auml;uft nur so lange, wie in <i>beiden</i> Listen noch etwas steht.</li>
+          <li><b>Zeile 7&ndash;12:</b> Die kleinere der beiden vordersten Zahlen wird angeh&auml;ngt, der zugeh&ouml;rige Zeiger r&uuml;ckt eins weiter.</li>
+          <li><b>Zeile 15&ndash;20:</b> Eine Liste ist leer &ndash; der Rest der anderen wird angeh&auml;ngt. <b>Hier wird nicht mehr verglichen</b>, das ist die Erkl&auml;rung f&uuml;r den Best Case.</li>
+          <li><b>&lt;=</b> statt <b>&lt;</b> in Zeile 7 sorgt daf&uuml;r, dass gleiche Werte ihre urspr&uuml;ngliche Reihenfolge behalten (Mergesort ist <i>stabil</i>).</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Aufrufprotokoll f&uuml;r deine aktuelle Zahlenfolge</h2>
+    <div class="ctrl">
+      <button class="b pri" id="tnext">&#9197; N&auml;chste Zeile</button>
+      <button class="b" id="tall">Alles zeigen</button>
+      <button class="b" id="treset">&#8635; Zur&uuml;cksetzen</button>
+      <span class="count" id="tinfo"></span>
+    </div>
+    <div class="trace" id="trace"></div>
+    <p style="font-size:13px;color:var(--mut)">Einr&uuml;ckung = Rekursionstiefe. Beachte die Reihenfolge: Erst wird bis ganz nach unten aufgerufen, <b>danach</b> wird von unten nach oben verschmolzen.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Aufgaben zum Code</h2>
+    <ol>
+      <li>Tippe beide Funktionen ab und teste sie mit <span class="nm">print(merge_sort([5, 3, 8, 1, 9, 2]))</span>.</li>
+      <li>Baue einen Z&auml;hler ein: eine globale Variable, die in <span class="fn">verschmelze</span> bei jedem Vergleich um 1 erh&ouml;ht wird. Vergleiche das Ergebnis mit der Tabelle auf Seite&nbsp;2.</li>
+      <li>Was passiert, wenn du Zeile 2&ndash;3 in <span class="fn">merge_sort</span> l&ouml;schst? Erkl&auml;re die Fehlermeldung.</li>
+      <li>&Auml;ndere <span class="nm">&lt;=</span> in <span class="nm">&lt;</span>. Sortiert das Programm noch richtig? Was &auml;ndert sich bei gleichen Werten?</li>
+      <li>Schreibe eine Funktion, die absteigend sortiert &ndash; &auml;ndere daf&uuml;r m&ouml;glichst wenig.</li>
+    </ol>
+  </div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const rng = (f,t)=>{const r=[];for(let x=f;x<=t;x++)r.push(x);return r;};
+
+/* ===================== SCHRITTGENERATOR ===================== */
+function genMerge(input){
+  const a = input.slice(), n = a.length;
+  const nodes = [];
+  (function build(lo,hi,d){
+    nodes.push({lo:lo,hi:hi,depth:d,vals:[],st:"idle",ptr:-1,shown:false});
+    if(lo<hi){ const m=(lo+hi)>>1; build(lo,m,d+1); build(m+1,hi,d+1); }
+  })(0,n-1,0);
+  const N={}; nodes.forEach(x=>N[x.lo+"-"+x.hi]=x);
+  const g=(lo,hi)=>N[lo+"-"+hi];
+  const steps=[]; let cV=0,cK=0;
+  function S(op,text,h){
+    if(op==="cmp") cV++;
+    if(op==="take"||op==="rest") cK++;
+    steps.push({arr:a.slice(),op:op,text:text,hi:h||{},cnt:{v:cV,k:cK},
+      nodes:nodes.map(x=>({lo:x.lo,hi:x.hi,depth:x.depth,vals:x.vals.slice(),
+                           st:x.st,ptr:x.ptr,shown:x.shown}))});
+  }
+  const root=g(0,n-1); root.shown=true; root.vals=a.slice(); root.st="active";
+  S("start","Startfolge mit n = "+n+" Zahlen. Mergesort teilt sie so lange in der Mitte, bis nur noch Einzelteile &uuml;brig sind.",{});
+
+  function verschmelze(lo,mid,hi2){
+    const P=g(lo,hi2), A=g(lo,mid), B=g(mid+1,hi2);
+    const L=a.slice(lo,mid+1), R=a.slice(mid+1,hi2+1);
+    P.vals=new Array(hi2-lo+1).fill(null); P.st="merging";
+    A.ptr=0; B.ptr=0; A.st="sorted"; B.st="sorted";
+    const H={L:rng(lo,mid),R:rng(mid+1,hi2)};
+    S("mergeStart","Verschmelzen von ["+L.join(", ")+"] und ["+R.join(", ")+"]. Beide Teillisten sind bereits sortiert &ndash; es muss nur vorne verglichen werden.",H);
+    let i=0,j=0,p=0;
+    while(i<L.length && j<R.length){
+      S("cmp","Vergleich: vorne links "+L[i]+" &harr; vorne rechts "+R[j]+"?",H);
+      let v,wo;
+      if(L[i]<=R[j]){ v=L[i]; wo="links"; i++; A.ptr=i; }
+      else          { v=R[j]; wo="rechts"; j++; B.ptr=j; }
+      a[lo+p]=v; P.vals[p]=v;
+      S("take",v+" ist kleiner (aus der "+wo+"en Teilliste) &rarr; wandert auf Platz "+(p+1)+" der neuen Liste.",
+        {L:H.L,R:H.R,W:[lo+p]});
+      p++;
+    }
+    while(i<L.length){
+      const v=L[i]; a[lo+p]=v; P.vals[p]=v; i++; A.ptr=i;
+      S("rest","Die rechte Teilliste ist leer &rarr; Rest von links ("+v+") einfach anh&auml;ngen. <b>Kein Vergleich n&ouml;tig.</b>",
+        {L:H.L,R:H.R,W:[lo+p]});
+      p++;
+    }
+    while(j<R.length){
+      const v=R[j]; a[lo+p]=v; P.vals[p]=v; j++; B.ptr=j;
+      S("rest","Die linke Teilliste ist leer &rarr; Rest von rechts ("+v+") einfach anh&auml;ngen. <b>Kein Vergleich n&ouml;tig.</b>",
+        {L:H.L,R:H.R,W:[lo+p]});
+      p++;
+    }
+    A.st="spent"; B.st="spent"; A.ptr=-1; B.ptr=-1; P.st="sorted";
+    S("done","Teilliste a["+lo+".."+hi2+"] ist fertig verschmolzen: ["+P.vals.join(", ")+"]",{W:rng(lo,hi2)});
+  }
+
+  (function ms(lo,hi2){
+    const P=g(lo,hi2); P.shown=true;
+    if(lo===hi2){
+      P.st="sorted";
+      S("leaf","a["+lo+"] = "+a[lo]+" ist eine Liste mit einem einzigen Element &ndash; die ist immer sortiert. Hier endet die Rekursion.",{W:[lo]});
+      return;
+    }
+    const m=(lo+hi2)>>1, A=g(lo,m), B=g(m+1,hi2);
+    A.shown=true; A.vals=a.slice(lo,m+1);
+    B.shown=true; B.vals=a.slice(m+1,hi2+1);
+    P.st="split";
+    S("split","Teilen: a["+lo+".."+hi2+"] wird in der Mitte geschnitten &rarr; links a["+lo+".."+m+"], rechts a["+(m+1)+".."+hi2+"].",
+      {L:rng(lo,m),R:rng(m+1,hi2)});
+    ms(lo,m); ms(m+1,hi2);
+    verschmelze(lo,m,hi2);
+  })(0,n-1);
+
+  S("fertig","Fertig &ndash; die gesamte Liste ist sortiert.",{W:rng(0,n-1)});
+  return steps;
+}
+
+/* ===================== ANZEIGE ===================== */
+let data=[], steps=[], pos=0, timer=null, playing=false;
+const BADGE={start:"",split:"key",leaf:"don",mergeStart:"mov",cmp:"cmp",take:"don",rest:"don",done:"don",fertig:"don"};
+const LABEL={start:"Start",split:"Teilen",leaf:"Basisfall",mergeStart:"Verschmelzen",cmp:"Vergleich",
+             take:"&Uuml;bernehmen",rest:"Rest anh&auml;ngen",done:"Teil fertig",fertig:"Fertig"};
+
+function anzahl(){ return Math.max(2, Math.min(16, parseInt($("anz").value,10)||8)); }
+function randomData(n){ const s=new Set(); while(s.size<n) s.add(5+Math.floor(Math.random()*95)); return Array.from(s); }
+
+function build(keep){
+  if(!keep) data = randomData(anzahl());
+  steps = genMerge(data); pos = 0;
+  $("inp").value = data.join(" "); $("anz").value = data.length;
+  buildTrace();
+  render();
+}
+
+function render(){
+  const st=steps[pos], arr=st.arr, n=arr.length, mx=Math.max.apply(null,arr);
+  const w = n<=6?86 : n<=10?62 : n<=13?48 : 38;
+  const vis=$("vis"); vis.innerHTML="";
+  for(let k=0;k<n;k++){
+    const c=document.createElement("div"); c.className="col"; c.style.width=w+"px";
+    ["L","R","W","done"].forEach(key=>{ if((st.hi[key]||[]).indexOf(k)>=0) c.classList.add(key); });
+    c.innerHTML='<div class="val">'+arr[k]+'</div><div class="bar" style="height:'+
+      Math.round(30+(arr[k]/mx)*130)+'px"></div><div class="idx">'+k+'</div>';
+    vis.appendChild(c);
+  }
+  const b=$("badge"); b.className="badge"+(BADGE[st.op]?" "+BADGE[st.op]:""); b.innerHTML=LABEL[st.op];
+  $("optxt").innerHTML=st.text;
+  $("stats").textContent="Vergleiche: "+st.cnt.v+" · Kopien: "+st.cnt.k+"  |";
+  $("count").textContent="n = "+n+" · Schritt "+pos+" / "+(steps.length-1);
+
+  // Baum
+  const maxD=Math.max.apply(null,st.nodes.map(x=>x.depth));
+  const tree=$("tree"); tree.innerHTML="";
+  for(let d=0;d<=maxD;d++){
+    const row=document.createElement("div"); row.className="lvlrow";
+    const tag=document.createElement("div"); tag.className="lvltag"; tag.textContent="Ebene "+d;
+    const lvl=document.createElement("div"); lvl.className="lvl";
+    lvl.style.gridTemplateColumns="repeat("+n+",minmax(0,1fr))";
+    st.nodes.filter(x=>x.depth===d).forEach(nd=>{
+      const el=document.createElement("div");
+      el.className="node "+(nd.shown?nd.st:"idle");
+      el.style.gridColumn=(nd.lo+1)+" / span "+(nd.hi-nd.lo+1);
+      el.style.setProperty("--c", nd.hi-nd.lo+1);
+      if(nd.shown){
+        el.innerHTML=nd.vals.map((v,q)=>{
+          let cl="chip";
+          if(v===null) cl+=" empty";
+          else if(nd.ptr>=0 && q<nd.ptr) cl+=" used";
+          else if(nd.ptr>=0 && q===nd.ptr && st.op==="cmp") cl+=" front";
+          else if(nd.st==="merging" && q===nd.vals.filter(x=>x!==null).length-1 && st.op!=="mergeStart") cl+=" fresh";
+          return '<span class="'+cl+'">'+(v===null?"0":v)+'</span>';
+        }).join("");
+      }
+      lvl.appendChild(el);
+    });
+    row.appendChild(tag); row.appendChild(lvl); tree.appendChild(row);
+  }
+
+  $("prev").disabled = pos===0;
+  $("next").disabled = pos>=steps.length-1;
+  if(pos>=steps.length-1) stop();
+}
+
+/* ===================== STEUERUNG ===================== */
+function delay(){ return 1150 - $("speed").value*100; }
+function stop(){ playing=false; clearTimeout(timer); $("play").innerHTML="&#9654; Abspielen"; }
+function tick(){ if(!playing) return; if(pos>=steps.length-1){ stop(); return; }
+  pos++; render(); if(playing) timer=setTimeout(tick,delay()); }
+$("play").onclick=()=>{ if(playing){stop();return;} if(pos>=steps.length-1) pos=0;
+  playing=true; $("play").innerHTML="&#10073;&#10073; Pause"; render(); timer=setTimeout(tick,delay()); };
+$("next").onclick=()=>{ stop(); if(pos<steps.length-1){pos++;render();} };
+$("prev").onclick=()=>{ stop(); if(pos>0){pos--;render();} };
+$("reset").onclick=()=>{ stop(); pos=0; render(); };
+$("rnd").onclick=()=>{ stop(); build(false); };
+$("anz").onchange=()=>{ stop(); $("anz").value=anzahl(); build(false); };
+$("best").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>x-y); build(true); };
+$("worst").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>y-x); build(true); };
+$("use").onclick=()=>{ const nums=$("inp").value.split(/[^0-9]+/).filter(s=>s!=="").map(Number).slice(0,16);
+  if(nums.length<2){ alert("Bitte 2 bis 16 Zahlen eingeben."); return; }
+  stop(); data=nums; build(true); };
+$("inp").addEventListener("keydown",e=>{ if(e.key==="Enter") $("use").click(); });
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(!$("p1").classList.contains("on")) return;
+  if(e.code==="Space"){ e.preventDefault(); $("play").click(); }
+  if(e.key==="ArrowRight"){ e.preventDefault(); $("next").click(); }
+  if(e.key==="ArrowLeft"){ e.preventDefault(); $("prev").click(); }
+});
+$("tabs").onclick=e=>{
+  const t=e.target.closest(".tab"); if(!t) return;
+  stop();
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id===t.dataset.page));
+};
+
+/* ===================== SEITE 2: MESSUNG ===================== */
+function zaehleMerge(arr){
+  let v=0;
+  (function ms(l){
+    if(l.length<=1) return l;
+    const m=l.length>>1, L=ms(l.slice(0,m)), R=ms(l.slice(m)), out=[];
+    let i=0,j=0;
+    while(i<L.length&&j<R.length){ v++; if(L[i]<=R[j]) out.push(L[i++]); else out.push(R[j++]); }
+    while(i<L.length) out.push(L[i++]);
+    while(j<R.length) out.push(R[j++]);
+    return out;
+  })(arr);
+  return v;
+}
+/* Konstruiert eine Eingabe, die Mergesort maximal viele Vergleiche kostet:
+   Die sortierte Zielfolge wird abwechselnd auf die beiden Haelften verteilt. */
+function worstInput(n){
+  return (function bau(ziel){
+    const k=ziel.length;
+    if(k<=1) return ziel;
+    const m=k>>1, L=[], R=[];
+    let nachL = (k%2===0);
+    for(let i=0;i<k;i++){
+      if(nachL && L.length<m){ L.push(ziel[i]); nachL=false; }
+      else if(!nachL && R.length<k-m){ R.push(ziel[i]); nachL=true; }
+      else if(L.length<m){ L.push(ziel[i]); } else { R.push(ziel[i]); }
+    }
+    return bau(L).concat(bau(R));
+  })(rng(1,n));
+}
+function tabelle(){
+  const ns=[8,16,32,64,128,256,512,1024];
+  let h="<thead><tr><th>n</th><th>zuf&auml;llig</th><th>sortiert<br>(Best Case)</th><th>konstruiert<br>(Worst Case)</th>"
+       +"<th>n &middot; log&#8322;n</th><th>n&sup2;/2</th><th>Worst &divide; n&middot;log&#8322;n</th></tr></thead><tbody>";
+  ns.forEach(n=>{
+    const zuf=[]; for(let i=0;i<n;i++) zuf.push(Math.random());
+    const srt=zuf.slice().sort((a,b)=>a-b);
+    const cz=zaehleMerge(zuf), cs=zaehleMerge(srt), cw=zaehleMerge(worstInput(n));
+    const nln=Math.round(n*Math.log2(n)), q=n*n/2;
+    h+="<tr><td>"+n+"</td><td>"+cz+"</td><td>"+cs+"</td><td>"+cw+"</td><td>"+nln+"</td><td>"
+      +q.toLocaleString("de-DE")+"</td><td>"+(cw/(n*Math.log2(n))).toFixed(2)+"</td></tr>";
+  });
+  $("tab").innerHTML=h+"</tbody>";
+}
+function chart(){
+  const ns=[4,8,16,32,64], W=800,H=260,ml=58,mb=34,mt=12,mr=230;
+  const mess=ns.map(n=>zaehleMerge(worstInput(n)));
+  const nlog=ns.map(n=>n*Math.log2(n)), quad=ns.map(n=>n*n/2);
+  const maxY=Math.max.apply(null,quad);
+  const X=i=>ml+(i/(ns.length-1))*(W-ml-mr), Y=v=>H-mb-(v/maxY)*(H-mb-mt);
+  const path=ys=>ys.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;height:auto">';
+  s+='<line x1="'+ml+'" y1="'+(H-mb)+'" x2="'+(W-mr)+'" y2="'+(H-mb)+'" stroke="currentColor" opacity=".3"/>';
+  s+='<line x1="'+ml+'" y1="'+mt+'" x2="'+ml+'" y2="'+(H-mb)+'" stroke="currentColor" opacity=".3"/>';
+  ns.forEach((n,i)=>{ s+='<text x="'+X(i)+'" y="'+(H-mb+15)+'" text-anchor="middle">n='+n+'</text>'; });
+  [0,.5,1].forEach(f=>{ const v=maxY*f;
+    s+='<text x="'+(ml-8)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+Math.round(v)+'</text>'; });
+  const S=[[quad,"#ef4444","n&sup2;/2 (einfache Verfahren)"],
+           [nlog,"#67727f","n &middot; log&#8322;n"],
+           [mess,"#2563eb","Mergesort (Worst Case, gemessen)"]];
+  S.forEach((se,k)=>{
+    s+='<path d="'+path(se[0])+'" fill="none" stroke="'+se[1]+'" stroke-width="2.5"/>';
+    se[0].forEach((v,i)=>{ s+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3.5" fill="'+se[1]+'"/>'; });
+    s+='<rect x="'+(W-mr+6)+'" y="'+(mt+8+k*22)+'" width="11" height="11" rx="3" fill="'+se[1]+'"/>';
+    s+='<text x="'+(W-mr+23)+'" y="'+(mt+18+k*22)+'">'+se[2]+'</text>';
+  });
+  $("chart").innerHTML=s+'</svg>';
+}
+
+/* ===================== SEITE 3: CODE & TRACE ===================== */
+const CODE1=[
+ '<span class="kw">def</span> <span class="fn">merge_sort</span>(liste):',
+ '    <span class="kw">if</span> len(liste) &lt;= <span class="nm">1</span>:',
+ '        <span class="kw">return</span> liste',
+ '',
+ '    mitte = len(liste) <span class="nm">//</span> <span class="nm">2</span>',
+ '    links  = <span class="fn">merge_sort</span>(liste[:mitte])',
+ '    rechts = <span class="fn">merge_sort</span>(liste[mitte:])',
+ '',
+ '    <span class="kw">return</span> <span class="fn">verschmelze</span>(links, rechts)'
+];
+const CODE2=[
+ '<span class="kw">def</span> <span class="fn">verschmelze</span>(links, rechts):',
+ '    ergebnis = []',
+ '    i = <span class="nm">0</span>',
+ '    j = <span class="nm">0</span>',
+ '',
+ '    <span class="kw">while</span> i &lt; len(links) <span class="kw">and</span> j &lt; len(rechts):',
+ '        <span class="kw">if</span> links[i] &lt;= rechts[j]:',
+ '            ergebnis.append(links[i])',
+ '            i = i + <span class="nm">1</span>',
+ '        <span class="kw">else</span>:',
+ '            ergebnis.append(rechts[j])',
+ '            j = j + <span class="nm">1</span>',
+ '',
+ '    <span class="cm"># eine Liste ist leer - Rest anhaengen, ohne Vergleich</span>',
+ '    <span class="kw">while</span> i &lt; len(links):',
+ '        ergebnis.append(links[i])',
+ '        i = i + <span class="nm">1</span>',
+ '    <span class="kw">while</span> j &lt; len(rechts):',
+ '        ergebnis.append(rechts[j])',
+ '        j = j + <span class="nm">1</span>',
+ '',
+ '    <span class="kw">return</span> ergebnis'
+];
+function renderCode(id,arr){
+  $(id).innerHTML=arr.map((l,k)=>'<div class="line"><span class="ln">'+(k+1)+'</span><span>'+l+'</span></div>').join("");
+}
+
+let traceLines=[], traceShown=0;
+function buildTrace(){
+  const L=[];
+  const f=x=>"["+x.join(", ")+"]";
+  (function ms(l,d){
+    const ind="   ".repeat(d);
+    L.push({t:ind+"merge_sort("+f(l)+")",k:"call"});
+    if(l.length<=1){ L.push({t:ind+"  -> "+f(l)+"  (höchstens 1 Element, schon sortiert)",k:"ret"}); return l.slice(); }
+    const m=l.length>>1;
+    L.push({t:ind+"  mitte = "+m+"  ->  links "+f(l.slice(0,m))+" , rechts "+f(l.slice(m)),k:"info"});
+    const A=ms(l.slice(0,m),d+1), B=ms(l.slice(m),d+1);
+    const out=[]; let i=0,j=0;
+    while(i<A.length&&j<B.length){ if(A[i]<=B[j]) out.push(A[i++]); else out.push(B[j++]); }
+    while(i<A.length) out.push(A[i++]);
+    while(j<B.length) out.push(B[j++]);
+    L.push({t:ind+"  verschmelze("+f(A)+", "+f(B)+") = "+f(out),k:"merge"});
+    L.push({t:ind+"  -> "+f(out),k:"ret"});
+    return out;
+  })(data.slice(),0);
+  traceLines=L; traceShown=0; renderTrace();
+}
+function renderTrace(){
+  $("trace").innerHTML=traceLines.map((l,k)=>
+    '<div class="tl '+l.k+(k>=traceShown?" dim":"")+'" style="'+(k>=traceShown?"visibility:hidden":"")+'">'+l.t+'</div>').join("");
+  $("tinfo").textContent="Zeile "+traceShown+" / "+traceLines.length;
+}
+$("tnext").onclick=()=>{ if(traceShown<traceLines.length){ traceShown++; renderTrace(); } };
+$("tall").onclick=()=>{ traceShown=traceLines.length; renderTrace(); };
+$("treset").onclick=()=>{ traceShown=0; renderTrace(); };
+
+/* ===================== START ===================== */
+renderCode("code1",CODE1); renderCode("code2",CODE2);
+tabelle(); chart();
+build(false);
+</script>
+</body>
+</html>

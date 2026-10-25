@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sortierverfahren – Bubble, Insertion, Selection Sort</title>
+<style>
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --panel2:#f7f9fb; --bd:#d9dee6;
+  --tx:#16202b; --mut:#67727f; --acc:#2563eb;
+  --cmp:#f59e0b; --swp:#ef4444; --don:#22c55e; --min:#8b5cf6; --key:#0ea5e9; --mov:#14b8a6;
+  --code-bg:#f7f9fb; --hl:#fff3cd; --hl-bd:#f0b429;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#12161c; --panel:#1a2029; --panel2:#141a22; --bd:#2c3644;
+    --tx:#e6ebf2; --mut:#94a3b3; --acc:#60a5fa;
+    --code-bg:#141a22; --hl:#3a3110; --hl-bd:#c48f14;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.45}
+.wrap{max-width:1400px;margin:0 auto;padding:14px 16px 28px}
+h1{font-size:19px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{font-size:13px;color:var(--mut);margin-top:2px}
+.topbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:4px}
+.tab{border:0;background:transparent;color:var(--mut);font:inherit;font-weight:600;font-size:14px;
+  padding:7px 14px;border-radius:7px;cursor:pointer}
+.tab:hover{color:var(--tx)}
+.tab.on{background:var(--acc);color:#fff}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:14px 16px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 10px;font-weight:700}
+
+/* Steuerung */
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button.b{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--bd);background:var(--panel);
+  color:var(--tx);border-radius:8px;padding:8px 13px;cursor:pointer}
+button.b:hover{border-color:var(--acc);color:var(--acc)}
+button.b:disabled{opacity:.4;cursor:default;border-color:var(--bd);color:var(--mut)}
+button.b.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.b.pri:hover{filter:brightness(1.08);color:#fff}
+input[type=text]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;
+  background:var(--panel);color:var(--tx);width:210px}
+.spacer{flex:1}
+.speed{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+input[type=range]{accent-color:var(--acc);width:110px}
+input[type=number]{font:inherit;font-size:14px;width:58px;padding:6px 6px;border:1px solid var(--bd);
+  border-radius:7px;background:var(--panel);color:var(--tx)}
+
+/* Visualisierung */
+.vis{display:flex;align-items:flex-end;justify-content:center;gap:12px;height:220px;padding:6px 4px 0}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;width:74px;height:100%}
+.val{font-size:14px;font-weight:700;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.bar{width:100%;border-radius:7px 7px 3px 3px;background:#9aa7b8;transition:height .18s ease,background .18s ease;
+  border:2px solid transparent}
+@media (prefers-color-scheme: dark){ .bar{background:#48566a} }
+.idx{font-size:12px;color:var(--mut);margin-top:6px;font-variant-numeric:tabular-nums}
+.col.done .bar{background:var(--don)}
+.col.region .bar{background:#8fd7a8}
+@media (prefers-color-scheme: dark){ .col.region .bar{background:#2f6b45} }
+.col.cmp .bar{background:var(--cmp);border-color:var(--cmp)}
+.col.swp .bar{background:var(--swp);border-color:var(--swp)}
+.col.min .bar{background:var(--min)}
+.col.key .bar{background:var(--key)}
+.col.mov .bar{background:var(--mov)}
+.col.hole .bar{opacity:.3;border:2px dashed var(--mut);background:transparent}
+.col.act .idx{color:var(--tx);font-weight:700}
+
+/* Operationsanzeige */
+.op{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
+.badge{font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--panel2);
+  border:1px solid var(--bd);color:var(--mut);white-space:nowrap}
+.badge.cmp{background:var(--cmp);border-color:var(--cmp);color:#3a2600}
+.badge.swp{background:var(--swp);border-color:var(--swp);color:#fff}
+.badge.mov{background:var(--mov);border-color:var(--mov);color:#04302c}
+.badge.don{background:var(--don);border-color:var(--don);color:#062d15}
+.badge.key{background:var(--key);border-color:var(--key);color:#012738}
+.optxt{font-size:15px;font-weight:500}
+.count{margin-left:auto;font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+/* Unterer Bereich */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.rightsplit{display:grid;grid-template-columns:1fr 168px;gap:14px}
+@media (max-width:1050px){ .grid{grid-template-columns:1fr} .rightsplit{grid-template-columns:1fr} }
+.code{background:var(--code-bg);border:1px solid var(--bd);border-radius:9px;padding:8px 0;overflow-x:auto}
+.line{display:flex;gap:10px;padding:2px 12px;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+  font-size:13.5px;white-space:pre;border-left:3px solid transparent}
+.line.on{background:var(--hl);border-left-color:var(--hl-bd)}
+.ln{color:var(--mut);opacity:.65;user-select:none;min-width:16px;text-align:right}
+.kw{color:#a626a4;font-weight:600}
+.fn{color:#4078f2}
+.nm{color:#986801}
+@media (prefers-color-scheme: dark){ .kw{color:#c678dd} .fn{color:#61afef} .nm{color:#d19a66} }
+.vars{background:var(--code-bg);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;align-self:start}
+.vrow{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--bd);
+  font-family:ui-monospace,Consolas,monospace;font-size:13.5px}
+.vrow:last-child{border-bottom:0}
+.vrow b{font-weight:600;color:var(--acc)}
+.vrow span{font-variant-numeric:tabular-nums}
+.note{font-size:12.5px;color:var(--mut);margin-top:8px}
+.idea{margin-top:10px;font-size:13.5px;color:var(--mut);background:var(--panel2);border:1px solid var(--bd);
+  border-radius:8px;padding:9px 12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" style="display:inline-block;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--acc);text-decoration:none">&larr; &Uuml;bersicht</a>
+
+  <div class="topbar">
+    <div>
+      <h1>Sortierverfahren Schritt für Schritt</h1>
+      <div class="sub">Bubble Sort · Insertion Sort · Selection Sort — 1 bis 8 Zahlen, Pseudocode und Python synchron</div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-algo="bubble">Bubble Sort</button>
+      <button class="tab" data-algo="insertion">Insertion Sort</button>
+      <button class="tab" data-algo="selection">Selection Sort</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ctrl">
+      <button class="b pri" id="play">▶ Abspielen</button>
+      <button class="b" id="prev">⏮ Zurück</button>
+      <button class="b" id="next">⏭ Schritt</button>
+      <button class="b" id="reset">⟲ Zurücksetzen</button>
+      <span class="speed">Tempo <input type="range" id="speed" min="1" max="10" value="5"></span>
+      <span class="speed">Anzahl n <input type="number" id="anz" min="1" max="8" value="8"></span>
+      <span class="spacer"></span>
+      <input type="text" id="inp" placeholder="1 bis 8 Zahlen, z. B. 34 7 91 12">
+      <button class="b" id="use">Übernehmen</button>
+      <button class="b" id="rnd">🎲 Neue Zahlen</button>
+      <button class="b" id="best" title="Best Case">↑ sortiert</button>
+      <button class="b" id="worst" title="Worst Case">↓ umgekehrt</button>
+    </div>
+
+    <div class="vis" id="vis"></div>
+
+    <div class="op">
+      <span class="badge" id="badge">Start</span>
+      <span class="optxt" id="optxt">—</span>
+      <span class="count" id="stats"></span>
+      <span class="count" id="count" style="margin-left:0">Schritt 0 / 0</span>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--cmp)"></i>Vergleich</span>
+      <span><i style="background:var(--swp)"></i>Tausch</span>
+      <span><i style="background:var(--mov)"></i>Verschieben</span>
+      <span><i style="background:var(--key)"></i>Schlüssel</span>
+      <span><i style="background:var(--min)"></i>bisheriges Minimum</span>
+      <span><i style="background:var(--don)"></i>endgültig sortiert</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Pseudocode</h2>
+      <div class="code" id="pseudo"></div>
+      <div class="idea" id="idea"></div>
+    </div>
+    <div class="panel">
+      <h2>Python</h2>
+      <div class="rightsplit">
+        <div class="code" id="python"></div>
+        <div>
+          <div class="vars" id="vars"></div>
+          <div class="note">Werte der Variablen im aktuellen Schritt</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+"use strict";
+
+/* ---------- Code-Texte ---------- */
+const ALGOS = {
+  bubble: {
+    name: "Bubble Sort",
+    idea: "Idee: Immer zwei Nachbarn vergleichen und bei Bedarf tauschen. Nach jedem Durchlauf steht das größte "
+        + "verbliebene Element ganz rechts – es „blubbert“ nach oben. Der Merker getauscht bricht ab, sobald "
+        + "ein ganzer Durchlauf ohne Tausch verläuft: dann ist das Feld schon sortiert.",
+    kom: "Best Case O(n): bereits sortierte Eingabe → 1 Durchlauf, n−1 Vergleiche, 0 Tausche. "
+       + "Average/Worst Case O(n²): umgekehrt sortiert → n(n−1)/2 Vergleiche und ebenso viele Tausche; "
+       + "bei n = {n} sind das {v}.",
+    pseudo: [
+      "n = Länge(a)",
+      "wiederhole für i von 0 bis n-2:",
+      "    getauscht = falsch",
+      "    wiederhole für j von 0 bis n-2-i:",
+      "        wenn a[j] > a[j+1]:",
+      "            tausche a[j] und a[j+1]",
+      "            getauscht = wahr",
+      "    wenn getauscht = falsch:",
+      "        brich ab",
+      "a ist sortiert"
+    ],
+    python: [
+      "def bubble_sort(a):",
+      "    n = len(a)",
+      "    for i in range(n - 1):",
+      "        getauscht = False",
+      "        for j in range(n - 1 - i):",
+      "            if a[j] > a[j+1]:",
+      "                a[j], a[j+1] = a[j+1], a[j]",
+      "                getauscht = True",
+      "        if not getauscht:",
+      "            break",
+      "    return a"
+    ]
+  },
+  insertion: {
+    name: "Insertion Sort",
+    idea: "Idee: Links entsteht ein sortierter Bereich. Das nächste Element (der Schlüssel) wird herausgenommen, "
+        + "größere Elemente rutschen nach rechts, dann wird der Schlüssel in die Lücke gesetzt.",
+    kom: "Best Case O(n): bei sortierter Eingabe endet die solange-Schleife sofort → n−1 Vergleiche, "
+       + "0 Verschiebungen. Average/Worst Case O(n²): umgekehrt sortiert muss jeder Schlüssel ganz nach links – "
+       + "bei n = {n} sind das {v} Vergleiche.",
+    pseudo: [
+      "n = Länge(a)",
+      "wiederhole für i von 1 bis n-1:",
+      "    schluessel = a[i]",
+      "    j = i - 1",
+      "    solange j >= 0 und a[j] > schluessel:",
+      "        a[j+1] = a[j]",
+      "        j = j - 1",
+      "    a[j+1] = schluessel",
+      "a ist sortiert"
+    ],
+    python: [
+      "def insertion_sort(a):",
+      "    n = len(a)",
+      "    for i in range(1, n):",
+      "        schluessel = a[i]",
+      "        j = i - 1",
+      "        while j >= 0 and a[j] > schluessel:",
+      "            a[j+1] = a[j]",
+      "            j = j - 1",
+      "        a[j+1] = schluessel",
+      "    return a"
+    ]
+  },
+  selection: {
+    name: "Selection Sort",
+    idea: "Idee: Im unsortierten Rest wird das kleinste Element gesucht und mit dem ersten unsortierten Platz "
+        + "getauscht. Pro Durchlauf gibt es höchstens einen Tausch.",
+    kom: "Immer O(n²) – auch bei sortierter Eingabe: die innere Schleife läuft stets komplett durch, "
+       + "bei n = {n} also immer {v} Vergleiche. Ein Abbruch wie bei Bubble Sort ist hier nicht möglich. "
+       + "Dafür höchstens n−1 Tausche – gut, wenn Schreibzugriffe teuer sind.",
+    pseudo: [
+      "n = Länge(a)",
+      "wiederhole für i von 0 bis n-2:",
+      "    min_i = i",
+      "    wiederhole für j von i+1 bis n-1:",
+      "        wenn a[j] < a[min_i]:",
+      "            min_i = j",
+      "    tausche a[i] und a[min_i]",
+      "a ist sortiert"
+    ],
+    python: [
+      "def selection_sort(a):",
+      "    n = len(a)",
+      "    for i in range(n - 1):",
+      "        min_i = i",
+      "        for j in range(i + 1, n):",
+      "            if a[j] < a[min_i]:",
+      "                min_i = j",
+      "        a[i], a[min_i] = a[min_i], a[i]",
+      "    return a"
+    ]
+  }
+};
+/* Pseudocode-Zeile k entspricht Python-Zeile k+1 (Kopfzeile "def ..." zusätzlich). */
+
+/* ---------- Schritte erzeugen ---------- */
+function rng(from, to){ const r=[]; for(let x=from;x<=to;x++) r.push(x); return r; }
+
+function genBubble(input){
+  const a=input.slice(), n=a.length, steps=[]; let sorted=[], cV=0, cT=0;
+  const S=(line,vars,hi,op,text)=>{
+    if(op==="cmp") cV++;
+    if(op==="swp"||op==="mov") cT++;
+    steps.push({arr:a.slice(),line,vars:Object.assign({},vars),hi:hi||{},op,text,
+                sorted:sorted.slice(),cnt:{v:cV,t:cT}});
+  };
+  const B = g => (g ? "wahr" : "falsch");
+  S(0,{n:n},{},"start","Startfolge einlesen, n = "+n);
+  for(let i=0;i<n-1;i++){
+    S(1,{n:n,i:i},{},"loop","Äußerer Durchlauf i = "+i);
+    let g=false;
+    S(2,{n:n,i:i,getauscht:B(g)},{},"set","getauscht = falsch (Merker für diesen Durchlauf)");
+    for(let j=0;j<n-1-i;j++){
+      S(3,{n:n,i:i,j:j,getauscht:B(g)},{},"loop","Innere Schleife j = "+j);
+      S(4,{n:n,i:i,j:j,getauscht:B(g)},{cmp:[j,j+1]},"cmp",
+        "Vergleiche a["+j+"] = "+a[j]+" mit a["+(j+1)+"] = "+a[j+1]);
+      if(a[j]>a[j+1]){
+        const x=a[j], y=a[j+1];
+        a[j]=y; a[j+1]=x;
+        S(5,{n:n,i:i,j:j,getauscht:B(g)},{swp:[j,j+1]},"swp",
+          "Tausch: "+x+" > "+y+" → a["+j+"] und a["+(j+1)+"] vertauschen");
+        g=true;
+        S(6,{n:n,i:i,j:j,getauscht:B(g)},{},"set","getauscht = wahr – dieser Durchlauf war nicht umsonst");
+      }else{
+        S(4,{n:n,i:i,j:j,getauscht:B(g)},{cmp:[j,j+1]},"nop","Kein Tausch: a["+j+"] ≤ a["+(j+1)+"]");
+      }
+    }
+    sorted = rng(n-1-i, n-1);
+    S(7,{n:n,i:i,getauscht:B(g)},{},g?"loop":"done","Durchlauf zu Ende: getauscht = "+B(g)
+      + (g ? " → weiter, Position "+(n-1-i)+" steht endgültig fest" : " → kein einziger Tausch"));
+    if(!g){
+      sorted = rng(0,n-1);
+      S(8,{n:n,i:i,getauscht:B(g)},{},"done",
+        "Abbruch: Ohne Tausch ist das Feld bereits sortiert – alle weiteren Durchläufe entfallen");
+      break;
+    }
+  }
+  sorted = rng(0,n-1);
+  S(9,{n:n},{},"done","Fertig – das Feld ist sortiert");
+  return steps;
+}
+
+function genInsertion(input){
+  const a=input.slice(), n=a.length, steps=[]; let sorted=[], cV=0, cT=0;
+  const S=(line,vars,hi,op,text)=>{
+    if(op==="cmp") cV++;
+    if(op==="swp"||op==="mov") cT++;
+    steps.push({arr:a.slice(),line,vars:Object.assign({},vars),hi:hi||{},op,text,
+                sorted:sorted.slice(),cnt:{v:cV,t:cT}});
+  };
+  S(0,{n:n},{},"start","Startfolge einlesen, n = "+n);
+  for(let i=1;i<n;i++){
+    sorted = rng(0,i-1);
+    S(1,{n:n,i:i},{},"loop","Durchlauf i = "+i+" (links steht ein sortierter Bereich)");
+    const key=a[i];
+    S(2,{n:n,i:i,schluessel:key},{key:[i]},"key","schluessel = a["+i+"] = "+key);
+    let j=i-1;
+    S(3,{n:n,i:i,schluessel:key,j:j},{key:[i]},"set","j = "+j);
+    while(true){
+      if(j>=0){
+        S(4,{n:n,i:i,schluessel:key,j:j},{cmp:[j],key:[i]},"cmp",
+          "Ist a["+j+"] = "+a[j]+" größer als schluessel = "+key+"?");
+        if(!(a[j]>key)) break;
+      }else{
+        S(4,{n:n,i:i,schluessel:key,j:j},{},"nop","j = "+j+" → linker Rand erreicht, Schleife endet");
+        break;
+      }
+      a[j+1]=a[j];
+      S(5,{n:n,i:i,schluessel:key,j:j},{mov:[j+1],hole:[j]},"mov",
+        "Verschieben: a["+(j+1)+"] = a["+j+"] = "+a[j+1]);
+      j=j-1;
+      S(6,{n:n,i:i,schluessel:key,j:j},{},"set","j = "+j);
+    }
+    a[j+1]=key;
+    S(7,{n:n,i:i,schluessel:key,j:j},{key:[j+1]},"key","Einfügen: a["+(j+1)+"] = schluessel = "+key);
+    sorted = rng(0,i);
+  }
+  sorted = rng(0,n-1);
+  S(8,{n:n},{},"done","Fertig – das Feld ist sortiert");
+  return steps;
+}
+
+function genSelection(input){
+  const a=input.slice(), n=a.length, steps=[]; let sorted=[], cV=0, cT=0;
+  const S=(line,vars,hi,op,text)=>{
+    if(op==="cmp") cV++;
+    if(op==="swp"||op==="mov") cT++;
+    steps.push({arr:a.slice(),line,vars:Object.assign({},vars),hi:hi||{},op,text,
+                sorted:sorted.slice(),cnt:{v:cV,t:cT}});
+  };
+  S(0,{n:n},{},"start","Startfolge einlesen, n = "+n);
+  for(let i=0;i<n-1;i++){
+    S(1,{n:n,i:i},{},"loop","Durchlauf i = "+i);
+    let m=i;
+    S(2,{n:n,i:i,min_i:m},{min:[m]},"set","min_i = "+m+" (erster unsortierter Platz)");
+    for(let j=i+1;j<n;j++){
+      S(3,{n:n,i:i,j:j,min_i:m},{min:[m]},"loop","Innere Schleife j = "+j);
+      S(4,{n:n,i:i,j:j,min_i:m},{cmp:[j],min:[m]},"cmp",
+        "Vergleiche a["+j+"] = "+a[j]+" mit a["+m+"] = "+a[m]);
+      if(a[j]<a[m]){
+        m=j;
+        S(5,{n:n,i:i,j:j,min_i:m},{min:[m]},"set","Neues Minimum gefunden: min_i = "+m);
+      }
+    }
+    if(m!==i){
+      const x=a[i], y=a[m];
+      a[i]=y; a[m]=x;
+      S(6,{n:n,i:i,min_i:m},{swp:[i,m]},"swp","Tausch: a["+i+"] ("+x+") ↔ a["+m+"] ("+y+")");
+    }else{
+      S(6,{n:n,i:i,min_i:m},{},"nop","min_i = i → kein Tausch nötig");
+    }
+    sorted = rng(0,i);
+  }
+  sorted = rng(0,n-1);
+  S(7,{n:n},{},"done","Fertig – das Feld ist sortiert");
+  return steps;
+}
+
+const GEN = { bubble:genBubble, insertion:genInsertion, selection:genSelection };
+
+/* ---------- Zustand ---------- */
+let algo="bubble", data=[], steps=[], pos=0, timer=null, playing=false;
+
+const $ = id => document.getElementById(id);
+
+function anzahl(){ return Math.max(1, Math.min(8, parseInt($("anz").value, 10) || 8)); }
+
+function randomData(n){
+  const s=new Set();
+  while(s.size<n) s.add(5+Math.floor(Math.random()*95));
+  return Array.from(s);
+}
+
+function build(keepData){
+  if(!keepData) data = randomData(anzahl());
+  steps = GEN[algo](data);
+  pos = 0;
+  $("inp").value = data.join(" ");
+  $("anz").value = data.length;
+  renderCode();
+  render();
+}
+
+/* ---------- Code rendern ---------- */
+const KW = /\b(def|for|in|range|while|and|or|not|if|else|break|return|len|True|False|wiederhole|für|von|bis|wenn|solange|tausche|brich|ab|und|ist|sortiert|wahr|falsch)\b/g;
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function hl(s){
+  return esc(s)
+    .replace(KW,'<span class="kw">$1</span>')
+    .replace(/\b(\d+)\b/g,'<span class="nm">$1</span>');
+}
+function renderCode(){
+  const A=ALGOS[algo];
+  $("idea").innerHTML = "";
+  const nn = data.length, vv = nn * (nn - 1) / 2;
+  const d1=document.createElement("div"); d1.textContent=A.idea;
+  const d2=document.createElement("div");
+  d2.style.marginTop="7px"; d2.style.paddingTop="7px"; d2.style.borderTop="1px dashed var(--bd)";
+  d2.innerHTML = "<b>Zeitkomplexität:</b> ";
+  d2.appendChild(document.createTextNode(
+    A.kom.replace(/\{n\}/g, nn).replace(/\{v\}/g, vv).replace("1 Vergleiche", "1 Vergleich")));
+  $("idea").appendChild(d1); $("idea").appendChild(d2);
+  $("pseudo").innerHTML = A.pseudo.map((l,k)=>
+    '<div class="line" data-l="'+k+'"><span class="ln">'+(k+1)+'</span><span>'+hl(l)+'</span></div>').join("");
+  $("python").innerHTML = A.python.map((l,k)=>
+    '<div class="line" data-p="'+k+'"><span class="ln">'+(k+1)+'</span><span>'+hl(l)+'</span></div>').join("");
+}
+
+/* ---------- Anzeige ---------- */
+const BADGE = {start:"", loop:"", set:"", nop:"", cmp:"cmp", swp:"swp", mov:"mov", key:"key", done:"don"};
+const LABEL = {start:"Start", loop:"Schleife", set:"Zuweisung", nop:"kein Tausch",
+               cmp:"Vergleich", swp:"Tausch", mov:"Verschieben", key:"Schlüssel", done:"Fertig"};
+
+function render(){
+  const st = steps[pos];
+  const arr = st.arr, mx = Math.max.apply(null, arr);
+
+  // Balken
+  const vis=$("vis"); vis.innerHTML="";
+  const h = i => Math.round(28 + (arr[i]/mx)*140);
+  const inArr=(k,name)=> (st.hi[name]||[]).indexOf(k)>=0;
+  for(let k=0;k<arr.length;k++){
+    const c=document.createElement("div"); c.className="col";
+    c.style.width = (arr.length<=3 ? 120 : arr.length<=5 ? 96 : 74) + "px";
+    if(st.sorted.indexOf(k)>=0) c.classList.add(algo==="insertion" && st.sorted.length<arr.length ? "region":"done");
+    if(inArr(k,"min")) c.classList.add("min");
+    if(inArr(k,"mov")) c.classList.add("mov");
+    if(inArr(k,"key")) c.classList.add("key");
+    if(inArr(k,"cmp")) c.classList.add("cmp","act");
+    if(inArr(k,"swp")) c.classList.add("swp","act");
+    if(inArr(k,"hole")) c.classList.add("hole");
+    c.innerHTML='<div class="val">'+arr[k]+'</div><div class="bar" style="height:'+h(k)+'px"></div>'
+              + '<div class="idx">'+k+'</div>';
+    vis.appendChild(c);
+  }
+
+  // Operation
+  const b=$("badge");
+  b.className="badge"+(BADGE[st.op]?" "+BADGE[st.op]:"");
+  b.textContent=LABEL[st.op];
+  $("optxt").textContent=st.text;
+  $("stats").textContent="Vergleiche: "+st.cnt.v+" · "
+     +(algo==="insertion"?"Verschiebungen: ":"Tausche: ")+st.cnt.t+"  |";
+  $("count").textContent="Schritt "+pos+" / "+(steps.length-1);
+
+  // Codezeilen
+  document.querySelectorAll("#pseudo .line").forEach(e=>
+    e.classList.toggle("on", +e.dataset.l===st.line));
+  document.querySelectorAll("#python .line").forEach(e=>
+    e.classList.toggle("on", +e.dataset.p===st.line+1));
+
+  // Variablen
+  $("vars").innerHTML = Object.keys(st.vars).map(k=>
+    '<div class="vrow"><b>'+k+'</b><span>'+st.vars[k]+'</span></div>').join("")
+    + '<div class="vrow"><b>a</b><span>['+arr.join(", ")+']</span></div>';
+
+  $("prev").disabled = pos===0;
+  $("next").disabled = pos>=steps.length-1;
+  if(pos>=steps.length-1) stop();
+}
+
+/* ---------- Steuerung ---------- */
+function delay(){ return 1150 - $("speed").value*100; }
+function stop(){ playing=false; clearTimeout(timer); $("play").textContent="▶ Abspielen"; }
+function tick(){
+  if(!playing) return;
+  if(pos>=steps.length-1){ stop(); return; }
+  pos++; render();
+  if(playing) timer=setTimeout(tick, delay());
+}
+$("play").onclick=()=>{
+  if(playing){ stop(); return; }
+  if(pos>=steps.length-1) pos=0;
+  playing=true; $("play").textContent="⏸ Pause"; render(); timer=setTimeout(tick, delay());
+};
+$("next").onclick=()=>{ stop(); if(pos<steps.length-1){ pos++; render(); } };
+$("prev").onclick=()=>{ stop(); if(pos>0){ pos--; render(); } };
+$("reset").onclick=()=>{ stop(); pos=0; render(); };
+$("rnd").onclick=()=>{ stop(); build(false); };
+$("anz").onchange=()=>{ stop(); $("anz").value = anzahl(); build(false); };
+$("best").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>x-y); build(true); };
+$("worst").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>y-x); build(true); };
+$("use").onclick=()=>{
+  const nums=$("inp").value.split(/[^0-9]+/).filter(s=>s!=="").map(Number).slice(0,8);
+  if(nums.length<1){ alert("Bitte 1 bis 8 Zahlen eingeben."); return; }
+  stop(); data=nums; build(true);
+};
+$("inp").addEventListener("keydown",e=>{ if(e.key==="Enter") $("use").click(); });
+$("tabs").onclick=e=>{
+  const t=e.target.closest(".tab"); if(!t) return;
+  stop();
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  algo=t.dataset.algo;
+  build(true);
+};
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(e.code==="Space"){ e.preventDefault(); $("play").click(); }
+  if(e.key==="ArrowRight"){ e.preventDefault(); $("next").click(); }
+  if(e.key==="ArrowLeft"){ e.preventDefault(); $("prev").click(); }
+});
+
+build(false);
+</script>
+</body>
+</html>

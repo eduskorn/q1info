@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quicksort – Ablauf, Pivotwahl, Laufzeit, Python</title>
+<style>
+:root{
+  --bg:#eef1f5; --panel:#ffffff; --panel2:#f7f9fb; --bd:#d9dee6;
+  --tx:#16202b; --mut:#67727f; --acc:#2563eb;
+  --cmp:#f59e0b; --swp:#ef4444; --don:#22c55e; --min:#8b5cf6; --key:#0ea5e9; --mov:#14b8a6;
+  --code-bg:#f7f9fb; --hl:#fff3cd; --hl-bd:#f0b429;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#12161c; --panel:#1a2029; --panel2:#141a22; --bd:#2c3644;
+         --tx:#e6ebf2; --mut:#94a3b3; --acc:#60a5fa;
+         --code-bg:#141a22; --hl:#3a3110; --hl-bd:#c48f14; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding:14px 16px 34px}
+h1{font-size:20px;margin:0;font-weight:650;letter-spacing:-.01em}
+.sub{font-size:13px;color:var(--mut);margin-top:2px}
+.topbar{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.tabs{display:flex;gap:6px;background:var(--panel);border:1px solid var(--bd);border-radius:10px;padding:4px}
+.tab{border:0;background:transparent;color:var(--mut);font:inherit;font-weight:600;font-size:14.5px;
+  padding:8px 16px;border-radius:7px;cursor:pointer}
+.tab:hover{color:var(--tx)}
+.tab.on{background:var(--acc);color:#fff}
+.panel{background:var(--panel);border:1px solid var(--bd);border-radius:12px;padding:14px 16px;margin-bottom:14px}
+.panel h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:0 0 10px;font-weight:700}
+.panel h3{font-size:16px;margin:18px 0 6px;font-weight:650}
+.panel h3:first-child{margin-top:0}
+p{margin:8px 0}
+.page{display:none}
+.page.on{display:block}
+
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+button.b{font:inherit;font-weight:600;font-size:14px;border:1px solid var(--bd);background:var(--panel);
+  color:var(--tx);border-radius:8px;padding:8px 13px;cursor:pointer}
+button.b:hover{border-color:var(--acc);color:var(--acc)}
+button.b:disabled{opacity:.4;cursor:default;border-color:var(--bd);color:var(--mut)}
+button.b.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.b.pri:hover{filter:brightness(1.08);color:#fff}
+button.b.warn{border-color:var(--swp);color:var(--swp)}
+button.b.good{border-color:var(--don);color:#188038}
+@media (prefers-color-scheme: dark){ button.b.good{color:var(--don)} }
+input[type=text]{font:inherit;font-size:14px;padding:8px 10px;border:1px solid var(--bd);border-radius:8px;
+  background:var(--panel);color:var(--tx);width:230px}
+select{font:inherit;font-size:14px;font-weight:600;padding:8px 9px;border:1px solid var(--bd);border-radius:8px;
+  background:var(--panel);color:var(--tx)}
+.spacer{flex:1}
+.speed{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mut)}
+input[type=range]{accent-color:var(--acc);width:110px}
+input[type=number]{font:inherit;font-size:14px;width:58px;padding:6px;border:1px solid var(--bd);
+  border-radius:7px;background:var(--panel);color:var(--tx)}
+
+.vis{display:flex;align-items:flex-end;justify-content:center;gap:10px;height:200px;padding:6px 4px 0}
+.col{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%}
+.val{font-size:13px;font-weight:700;margin-bottom:4px;font-variant-numeric:tabular-nums}
+.bar{width:100%;border-radius:7px 7px 3px 3px;background:#9aa7b8;
+  transition:height .18s ease,background .18s ease;border:2px solid transparent}
+@media (prefers-color-scheme: dark){ .bar{background:#48566a} }
+.idx{font-size:11.5px;color:var(--mut);margin-top:5px;font-variant-numeric:tabular-nums}
+.col.reg .bar{background:#b9c3d0}
+@media (prefers-color-scheme: dark){ .col.reg .bar{background:#5a6a80} }
+.col.small .bar{background:var(--mov)}
+.col.cmpj .bar{background:var(--cmp);border-color:var(--cmp)}
+.col.piv .bar{background:var(--min);border-color:var(--min)}
+.col.fix .bar{background:var(--don);border-color:var(--don)}
+.col.act .idx{color:var(--tx);font-weight:700}
+.mark{font-size:11px;color:var(--mut);height:14px;font-weight:700}
+
+.op{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--bd)}
+.badge{font-size:12.5px;font-weight:700;padding:4px 11px;border-radius:999px;background:var(--panel2);
+  border:1px solid var(--bd);color:var(--mut);white-space:nowrap}
+.badge.cmp{background:var(--cmp);border-color:var(--cmp);color:#3a2600}
+.badge.swp{background:var(--swp);border-color:var(--swp);color:#fff}
+.badge.don{background:var(--don);border-color:var(--don);color:#062d15}
+.badge.piv{background:var(--min);border-color:var(--min);color:#fff}
+.optxt{font-size:15px;font-weight:500;flex:1 1 320px}
+.count{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums;white-space:nowrap}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--mut);margin-top:10px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+
+.tree{display:flex;flex-direction:column;gap:7px}
+.lvlrow{display:grid;grid-template-columns:82px 1fr;gap:10px;align-items:center}
+.lvltag{font-size:11.5px;color:var(--mut);text-align:right;font-variant-numeric:tabular-nums}
+.lvl{display:grid;gap:6px}
+.node{border:1px solid var(--bd);border-radius:8px;padding:4px 3px;background:var(--panel2);
+  display:grid;grid-template-columns:repeat(var(--c,1),minmax(0,1fr));gap:3px;min-height:30px;align-items:center}
+.node.empty{display:flex;justify-content:center;align-items:center}
+.node.active{border-color:var(--acc);background:rgba(37,99,235,.07)}
+.node.done{border-color:var(--don);opacity:.8}
+.node.empty{border-style:dashed;opacity:.4;font-size:11.5px;color:var(--mut)}
+.chip{min-width:0;text-align:center;font:600 12.5px ui-monospace,Consolas,monospace;
+  padding:2px 2px;border-radius:5px;background:var(--panel);border:1px solid var(--bd)}
+.chip.p{background:var(--min);border-color:var(--min);color:#fff}
+.chip.f{background:var(--don);border-color:var(--don);color:#062d15}
+.chip.j{background:var(--cmp);border-color:var(--cmp);color:#3a2600}
+
+.tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:14px;margin-top:8px}
+th,td{border-bottom:1px solid var(--bd);padding:7px 9px;text-align:right;font-variant-numeric:tabular-nums}
+th{font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);font-weight:700;text-align:right}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:var(--panel2)}
+td.bad{color:var(--swp);font-weight:700}
+td.good{color:#188038;font-weight:700}
+@media (prefers-color-scheme: dark){ td.good{color:var(--don)} }
+
+.code{background:var(--code-bg);border:1px solid var(--bd);border-radius:9px;padding:9px 0;overflow-x:auto}
+.line{display:flex;gap:10px;padding:2px 12px;font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+  font-size:13.5px;white-space:pre;border-left:3px solid transparent}
+.ln{color:var(--mut);opacity:.6;user-select:none;min-width:18px;text-align:right}
+.kw{color:#a626a4;font-weight:600}
+.fn{color:#4078f2}
+.nm{color:#986801}
+.cm{color:#7f8c98;font-style:italic}
+@media (prefers-color-scheme: dark){ .kw{color:#c678dd} .fn{color:#61afef} .nm{color:#d19a66} }
+.trace{background:var(--code-bg);border:1px solid var(--bd);border-radius:9px;padding:10px 12px;
+  font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre;overflow-x:auto;min-height:120px}
+.tl{padding:1px 0}
+.tl.call{color:var(--acc)}
+.tl.ret{color:#188038}
+@media (prefers-color-scheme: dark){ .tl.ret{color:#6ee7a0} }
+.tl.piv{color:#7c3aed}
+@media (prefers-color-scheme: dark){ .tl.piv{color:#c4b5fd} }
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.grid2>*{min-width:0}
+@media (max-width:980px){ .grid2{grid-template-columns:1fr} }
+.box{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:11px 13px;font-size:14px}
+.box.bad{border-color:var(--swp);background:rgba(239,68,68,.07)}
+.box.ok{border-color:var(--don);background:rgba(34,197,94,.08)}
+.box b{color:var(--acc)}
+.kpi{display:flex;flex-wrap:wrap;gap:10px;margin:2px 0 0}
+.kpi div{background:var(--panel2);border:1px solid var(--bd);border-radius:9px;padding:7px 13px;font-size:12.5px;color:var(--mut)}
+.kpi div b{display:block;font-size:19px;color:var(--tx);font-variant-numeric:tabular-nums}
+.kpi div.hot b{color:var(--swp)}
+.kpi div.cool b{color:#188038}
+@media (prefers-color-scheme: dark){ .kpi div.cool b{color:var(--don)} }
+ol,ul{margin:8px 0;padding-left:22px}
+li{margin-bottom:6px}
+.formel{font-family:ui-monospace,Consolas,monospace;background:var(--panel2);border:1px solid var(--bd);
+  border-radius:7px;padding:8px 11px;display:inline-block;margin:6px 0;font-size:14px}
+svg text{fill:var(--mut);font-size:11px;font-family:system-ui,sans-serif}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a href="index.html" style="display:inline-block;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--acc);text-decoration:none">&larr; &Uuml;bersicht</a>
+
+  <div class="topbar">
+    <div>
+      <h1>Quicksort</h1>
+      <div class="sub">Zerlegen am Pivot &ndash; warum die Wahl des Pivots &uuml;ber die Laufzeit entscheidet</div>
+    </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-page="p1">1 &middot; Ablauf</button>
+      <button class="tab" data-page="p2">2 &middot; Laufzeit &amp; Pivot</button>
+      <button class="tab" data-page="p3">3 &middot; Python</button>
+    </div>
+  </div>
+
+<!-- ============ SEITE 1 ============ -->
+<div class="page on" id="p1">
+  <div class="panel">
+    <div class="ctrl">
+      <button class="b pri" id="play">&#9654; Abspielen</button>
+      <button class="b" id="prev">&#9198; Zur&uuml;ck</button>
+      <button class="b" id="next">&#9197; Schritt</button>
+      <button class="b" id="reset">&#8635; Zur&uuml;cksetzen</button>
+      <span class="speed">Tempo <input type="range" id="speed" min="1" max="10" value="6"></span>
+      <span class="speed">Anzahl n <input type="number" id="anz" min="2" max="14" value="8"></span>
+      <span class="spacer"></span>
+      <span class="speed">Pivot:
+        <select id="mode">
+          <option value="last">letztes Element</option>
+          <option value="first">erstes Element</option>
+          <option value="mid">mittleres Element</option>
+        </select>
+      </span>
+    </div>
+    <div class="ctrl">
+      <input type="text" id="inp" placeholder="2 bis 14 Zahlen, z. B. 34 7 91 12">
+      <button class="b" id="use">&Uuml;bernehmen</button>
+      <button class="b" id="rnd">Neue Zahlen</button>
+      <button class="b" id="sorted">&#8593; sortiert</button>
+      <button class="b" id="rev">&#8595; umgekehrt</button>
+      <span class="spacer"></span>
+      <button class="b warn" id="demoBad">Worst Case zeigen</button>
+      <button class="b good" id="demoGood">Best Case zeigen</button>
+    </div>
+
+    <div class="vis" id="vis"></div>
+
+    <div class="op">
+      <span class="badge" id="badge">Start</span>
+      <span class="optxt" id="optxt">&mdash;</span>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="kpi" style="margin-top:12px">
+      <div>Vergleiche<b id="kV">0</b></div>
+      <div>Vertauschungen<b id="kT">0</b></div>
+      <div id="kDbox">Rekursionstiefe<b id="kD">0</b></div>
+      <div>zum Vergleich: log&#8322;(n)<b id="kL">0</b></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--min)"></i>Pivot</span>
+      <span><i style="background:var(--cmp)"></i>wird gerade mit dem Pivot verglichen</span>
+      <span><i style="background:var(--mov)"></i>kleiner/gleich Pivot (linker Bereich)</span>
+      <span><i style="background:#b9c3d0"></i>aktuelle Teilliste</span>
+      <span><i style="background:var(--don)"></i>endg&uuml;ltig an seinem Platz</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Rekursionsbaum &ndash; hier sieht man die Pivotwahl</h2>
+    <div class="tree" id="tree"></div>
+    <div id="hinweis" style="margin-top:12px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Beobachtungsauftrag</h2>
+    <ol>
+      <li>Verfolge einen Zerlegungsdurchlauf. Was gilt nach dem Zerlegen f&uuml;r <i>alle</i> Zahlen links vom Pivot, was f&uuml;r alle rechts davon? Warum muss das Pivot danach nie wieder bewegt werden?</li>
+      <li>Klicke &bdquo;&#8593; sortiert&ldquo; bei Pivot = <i>letztes Element</i>. Wie lang sind die beiden Teillisten nach dem ersten Zerlegen? Wie tief wird der Baum?</li>
+      <li>Stelle jetzt bei derselben Zahlenfolge auf Pivot = <i>mittleres Element</i> um. Vergleiche Tiefe und Vergleiche mit dem Wert von vorher.</li>
+      <li>Formuliere in einem Satz, welche Eigenschaft die Teillisten haben m&uuml;ssen, damit Quicksort schnell ist.</li>
+      <li>Gibt es eine Zahlenfolge, bei der auch das mittlere Element eine schlechte Wahl ist? Begr&uuml;nde.</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============ SEITE 2 ============ -->
+<div class="page" id="p2">
+  <div class="panel">
+    <h2>Was kostet ein Zerlegungsschritt?</h2>
+    <p>Beim Zerlegen (<i>Partitionieren</i>) wird jedes Element der Teilliste genau einmal mit dem Pivot verglichen.
+    Eine Teilliste der L&auml;nge k kostet also <b>k &minus; 1 Vergleiche</b> &ndash; unabh&auml;ngig davon, wie gut oder schlecht das Pivot ist.</p>
+    <p>Der Unterschied zwischen schnell und langsam steckt also <b>nicht</b> im einzelnen Zerlegungsschritt, sondern darin,
+    <b>wie viele Ebenen</b> der Rekursionsbaum bekommt. Und das entscheidet allein die Pivotwahl.</p>
+
+    <div class="grid2">
+      <div class="box ok">
+        <b>Best Case &ndash; Pivot trifft die Mitte</b>
+        <p>Beide Teillisten sind etwa gleich lang: n/2 und n/2. Die L&auml;nge halbiert sich pro Ebene, es gibt also log&#8322;(n) Ebenen.
+        Auf jeder Ebene werden zusammen h&ouml;chstens n Elemente verglichen.</p>
+        <div class="formel">C(n) = 2 &middot; C(n/2) + (n&minus;1) &nbsp; &rarr; &nbsp; C(n) &asymp; n &middot; log&#8322;(n)</div>
+        <p style="margin-bottom:0">n = 1024 &rarr; rund <b>10&nbsp;000</b> Vergleiche.</p>
+      </div>
+      <div class="box bad">
+        <b>Worst Case &ndash; Pivot ist das kleinste oder gr&ouml;&szlig;te Element</b>
+        <p>Eine Teilliste ist leer, die andere hat n&minus;1 Elemente. Es wird nur ein einziges Element pro Ebene festgesetzt,
+        der Baum wird zu einer langen Kette der Tiefe n&minus;1.</p>
+        <div class="formel">C(n) = C(n&minus;1) + (n&minus;1) &nbsp; &rarr; &nbsp; C(n) = n&middot;(n&minus;1)/2 &asymp; n&sup2;/2</div>
+        <p style="margin-bottom:0">n = 1024 &rarr; rund <b>524&nbsp;000</b> Vergleiche &ndash; gut 50-mal so viel.</p>
+      </div>
+    </div>
+
+    <h3>Der gef&auml;hrliche Standardfall</h3>
+    <p>Nimmt man immer das <b>letzte</b> (oder immer das <b>erste</b>) Element als Pivot, dann tritt der Worst Case
+    ausgerechnet bei einer <b>bereits sortierten</b> Liste ein: Das letzte Element ist dann immer das Gr&ouml;&szlig;te,
+    die rechte Teilliste bleibt jedes Mal leer. Sortierte oder fast sortierte Daten sind in der Praxis aber keine Seltenheit,
+    sondern der Normalfall &ndash; genau deshalb ist diese Pivotwahl gef&auml;hrlich.</p>
+    <p>Nimmt man das <b>mittlere</b> Element, ist derselbe Fall der beste &uuml;berhaupt: Das mittlere Element einer sortierten Liste
+    ist genau der Median, die Teillisten werden exakt gleich lang.</p>
+    <div class="box" style="margin-top:6px">Wichtig f&uuml;r das Verst&auml;ndnis: Auch die Wahl &bdquo;mittleres Element&ldquo; hat einen Worst Case &ndash;
+    man kann eine Eingabe konstruieren, die genau diese Wahl aush&auml;ngt. Es gibt <b>keine feste Pivotregel ohne Worst Case</b>.
+    Deshalb w&auml;hlen praktische Implementierungen das Pivot zuf&auml;llig oder als Median aus drei Werten: Der Worst Case verschwindet dadurch nicht,
+    aber er h&auml;ngt nicht mehr von der Eingabe ab und wird extrem unwahrscheinlich.</div>
+
+    <h3>Vergleich mit Mergesort</h3>
+    <p>Mergesort teilt <i>immer</i> exakt in der Mitte, weil es nach Positionen teilt und nicht nach Werten. Deshalb hat es
+    keinen quadratischen Fall &ndash; daf&uuml;r braucht es zus&auml;tzlichen Speicher. Quicksort arbeitet ohne Zusatzspeicher direkt in der Liste
+    und ist in der Praxis meist schneller, riskiert daf&uuml;r den Worst Case.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Gemessen: Vergleiche und Rekursionstiefe</h2>
+    <p>Tats&auml;chlich ausgez&auml;hlt, jeweils beim &Ouml;ffnen dieser Seite berechnet. Rot = Worst-Case-Verhalten.</p>
+    <div class="tblwrap"><table id="tab"></table></div>
+  </div>
+
+  <div class="panel">
+    <h2>Wachstum im Bild</h2>
+    <div id="chart"></div>
+    <h3>Aufgaben</h3>
+    <ol>
+      <li>Lies aus der Tabelle ab: Um welchen Faktor w&auml;chst die Vergleichszahl im Worst Case, wenn sich n verdoppelt? Und im Best Case?</li>
+      <li>Rechne nach: n&middot;(n&minus;1)/2 f&uuml;r n = 512. Stimmt der Wert mit der Messung &uuml;berein?</li>
+      <li>Begr&uuml;nde, warum die Rekursionstiefe im Worst Case ein praktisches Problem ist (Stichwort: Aufrufstapel).</li>
+      <li>Warum hilft es nichts, beim Pivot einfach &bdquo;immer das zweite Element&ldquo; zu nehmen?</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============ SEITE 3 ============ -->
+<div class="page" id="p3">
+  <div class="panel">
+    <h2>Python &ndash; einfache Variante mit Teillisten</h2>
+    <p>Diese Fassung baut bei jedem Aufruf neue Listen. Sie ist nicht die speichersparendste, aber sie zeigt die Idee von Quicksort
+    in wenigen Zeilen und ohne Index-Jonglage.</p>
+    <div class="grid2">
+      <div><div class="code" id="code1"></div></div>
+      <div>
+        <h3 style="margin-top:0">Zeile f&uuml;r Zeile</h3>
+        <ul style="font-size:14px">
+          <li><b>Zeile 2&ndash;3:</b> Abbruch der Rekursion: 0 oder 1 Element ist immer sortiert.</li>
+          <li><b>Zeile 5:</b> Das Pivot wird festgelegt &ndash; hier das <i>erste</i> Element. <b>Diese eine Zeile entscheidet &uuml;ber die Laufzeit.</b></li>
+          <li><b>Zeile 6:</b> <span class="nm">liste[1:]</span> ist der Rest ohne das Pivot. Wichtig: Das Pivot darf nicht noch einmal einsortiert werden.</li>
+          <li><b>Zeile 8&ndash;14:</b> Jedes Element des Rests wird einmal mit dem Pivot verglichen und in einen der beiden Eimer gelegt. <i>Das sind die k&minus;1 Vergleiche.</i></li>
+          <li><b>Zeile 16:</b> Beide Eimer werden rekursiv sortiert und mit dem Pivot dazwischen zusammengeh&auml;ngt. Das Pivot steht bereits endg&uuml;ltig richtig.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>Dieselbe Funktion mit besserem Pivot</h3>
+    <p>Nur der Anfang &auml;ndert sich &ndash; und aus dem Worst Case bei sortierten Daten wird der Best Case:</p>
+    <div class="grid2">
+      <div><div class="code" id="code2"></div></div>
+      <div>
+        <ul style="font-size:14px;margin-top:0">
+          <li><b>Zeile 5&ndash;6:</b> <span class="nm">len(liste) // 2</span> ist die Position der Mitte, <span class="nm">liste[m]</span> der Wert dort.</li>
+          <li><b>Zeile 7:</b> Der Rest wird aus dem St&uuml;ck <i>vor</i> und dem St&uuml;ck <i>nach</i> dem Pivot zusammengesetzt. Der Pivot-Platz <span class="nm">m</span> wird dabei &uuml;bersprungen.</li>
+          <li>Der &uuml;brige Code bleibt Zeile f&uuml;r Zeile identisch.</li>
+          <li><b>Kurzschreibweise</b> f&uuml;r die beiden Eimer (sp&auml;ter, wenn Listenkomprehension bekannt ist):<br>
+            <span class="nm">kleiner = [x for x in rest if x &lt;= pivot]</span></li>
+        </ul>
+        <div class="box" style="margin-top:10px">Diese Variante ist nicht <i>in&nbsp;place</i>: Sie legt neue Listen an und braucht deshalb zus&auml;tzlichen Speicher.
+        Die Lehrbuchversion sortiert mit zwei Indizes direkt in der Liste &ndash; die Animation auf Seite&nbsp;1 zeigt genau diese Version.
+        Die Anzahl der Vergleiche ist bei beiden gleich.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Aufrufprotokoll f&uuml;r deine aktuelle Zahlenfolge</h2>
+    <div class="ctrl">
+      <button class="b pri" id="tnext">&#9197; N&auml;chste Zeile</button>
+      <button class="b" id="tall">Alles zeigen</button>
+      <button class="b" id="treset">&#8635; Zur&uuml;cksetzen</button>
+      <span class="speed">Pivot:
+        <select id="tmode">
+          <option value="first">erstes Element</option>
+          <option value="mid">mittleres Element</option>
+        </select></span>
+      <span class="count" id="tinfo"></span>
+    </div>
+    <div class="trace" id="trace"></div>
+    <p style="font-size:13px;color:var(--mut)">Tipp f&uuml;r den Unterricht: Erst mit zuf&auml;lligen Zahlen anschauen, dann die Zahlen auf Seite&nbsp;1
+    sortieren und das Protokoll noch einmal lesen. Bei Pivot = erstes Element wird die Einr&uuml;ckung zur Treppe.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Aufgaben zum Code</h2>
+    <ol>
+      <li>Tippe die erste Fassung ab und teste sie mit <span class="nm">print(quick_sort([5, 3, 8, 1, 9, 2]))</span>.</li>
+      <li>Lass dir in jedem Aufruf <span class="nm">print(pivot, kleiner, groesser)</span> ausgeben und vergleiche mit dem Protokoll oben.</li>
+      <li>Baue einen Vergleichsz&auml;hler ein und sortiere damit die Liste <span class="nm">[1, 2, 3, 4, 5, 6, 7, 8]</span>. Erst mit Pivot = erstes, dann mit Pivot = mittleres Element.</li>
+      <li>Was geht schief, wenn du in Zeile 6 <span class="nm">rest = liste</span> statt <span class="nm">liste[1:]</span> schreibst? Erkl&auml;re, warum das Programm dann nie fertig wird.</li>
+      <li>Setze <span class="nm">import random</span> und w&auml;hle das Pivot zuf&auml;llig. Wiederhole Aufgabe 3 mehrfach &ndash; was beobachtest du?</li>
+    </ol>
+  </div>
+</div>
+
+</div>
+
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const rng=(f,t)=>{const r=[];for(let x=f;x<=t;x++)r.push(x);return r;};
+
+/* ===================== SCHRITTGENERATOR (Lomuto) ===================== */
+function genQuick(input,mode){
+  const a=input.slice(), n=a.length;
+  const nodes=[], steps=[], fix=[];
+  let cV=0,cT=0,maxD=0;
+  function S(op,text,h){
+    steps.push({arr:a.slice(),op:op,text:text,hi:h||{},
+      cnt:{v:cV,t:cT,d:maxD},
+      fix:fix.slice(),
+      nodes:nodes.map(x=>({lo:x.lo,hi:x.hi,depth:x.depth,st:x.st,piv:x.piv,empty:x.empty}))});
+  }
+  const swap=(x,y)=>{const t=a[x];a[x]=a[y];a[y]=t;};
+  const NAME={last:"letztes",first:"erstes",mid:"mittleres"};
+
+  S("start","Startfolge mit n = "+n+" Zahlen. Pivotregel: immer das <b>"+NAME[mode]+" Element</b> der Teilliste.",{});
+
+  (function qs(lo,hi2,d){
+    if(lo>hi2){
+      nodes.push({lo:lo,hi:hi2,depth:d,st:"empty",piv:-1,empty:true});
+      S("empty","Leere Teilliste &ndash; hier ist nichts zu tun. (Eine leere Seite bedeutet: Das Pivot war ein Randwert.)",{});
+      return;
+    }
+    maxD=Math.max(maxD,d);
+    const nd={lo:lo,hi:hi2,depth:d,st:"active",piv:-1,empty:false};
+    nodes.push(nd);
+    if(lo===hi2){
+      fix.push(lo); nd.st="done"; nd.piv=lo;
+      S("leaf","Teilliste a["+lo+"] hat nur ein Element &rarr; steht endg&uuml;ltig richtig.",{fix:[lo]});
+      return;
+    }
+    S("enter","Neuer Aufruf f&uuml;r a["+lo+".."+hi2+"], L&auml;nge "+(hi2-lo+1)+", Rekursionstiefe "+d+".",{reg:rng(lo,hi2)});
+
+    let pi = mode==="last" ? hi2 : mode==="first" ? lo : (lo+hi2)>>1;
+    const pivot=a[pi];
+    if(pi!==hi2){
+      swap(pi,hi2); cT++;
+      S("piv","Pivot = "+NAME[mode]+" Element = "+pivot+". Es wird ans Ende der Teilliste getauscht, damit es beim Zerlegen nicht im Weg steht.",
+        {reg:rng(lo,hi2),piv:[hi2]});
+    }else{
+      S("piv","Pivot = "+NAME[mode]+" Element = "+pivot+".",{reg:rng(lo,hi2),piv:[hi2]});
+    }
+
+    let i=lo-1;
+    for(let j=lo;j<hi2;j++){
+      cV++;
+      S("cmp","Ist a["+j+"] = "+a[j]+" kleiner oder gleich dem Pivot "+pivot+"?",
+        {reg:rng(lo,hi2),piv:[hi2],cmpj:[j],small:rng(lo,i)});
+      if(a[j]<=pivot){
+        i++;
+        if(i!==j){
+          const x=a[i],y=a[j];
+          swap(i,j); cT++;
+          S("swap","Ja &rarr; a["+j+"] geh&ouml;rt nach links. Tausch von "+y+" und "+x+".",
+            {reg:rng(lo,hi2),piv:[hi2],small:rng(lo,i)});
+        }else{
+          S("keep","Ja &rarr; a["+j+"] steht bereits an der richtigen Stelle im linken Bereich.",
+            {reg:rng(lo,hi2),piv:[hi2],small:rng(lo,i)});
+        }
+      }else{
+        S("nop","Nein &rarr; a["+j+"] = "+a[j]+" ist gr&ouml;&szlig;er als das Pivot und bleibt im rechten Bereich liegen.",
+          {reg:rng(lo,hi2),piv:[hi2],small:rng(lo,i)});
+      }
+    }
+    const p=i+1;
+    if(p!==hi2){ swap(p,hi2); cT++; }
+    fix.push(p); nd.piv=p; nd.st="done";
+    const links=p-lo, rechts=hi2-p;
+    S("place","Das Pivot "+pivot+" wird auf Platz "+p+" getauscht. Links davon stehen nur kleinere, rechts nur gr&ouml;&szlig;ere Werte &rarr; <b>das Pivot steht endg&uuml;ltig richtig</b>. Teillisten: links "+links+", rechts "+rechts+" Elemente."
+      +(links===0||rechts===0 ? " <b>Eine Seite ist leer &ndash; das ist der ung&uuml;nstigste Fall!</b>" : ""),
+      {fix:[p],reg:rng(lo,hi2)});
+    qs(lo,p-1,d+1); qs(p+1,hi2,d+1);
+  })(0,n-1,0);
+
+  S("fertig","Fertig &ndash; alle Zahlen stehen endg&uuml;ltig an ihrem Platz. Rekursionstiefe insgesamt: "+maxD+".",{fix:rng(0,n-1)});
+  return steps;
+}
+
+/* ===================== ANZEIGE ===================== */
+let data=[],steps=[],pos=0,timer=null,playing=false,mode="last";
+const BADGE={start:"",enter:"",piv:"piv",cmp:"cmp",swap:"swp",keep:"",nop:"",place:"don",leaf:"don",empty:"",fertig:"don"};
+const LABEL={start:"Start",enter:"Aufruf",piv:"Pivot w&auml;hlen",cmp:"Vergleich",swap:"Tausch",
+             keep:"bleibt",nop:"kein Tausch",place:"Pivot gesetzt",leaf:"Basisfall",empty:"leer",fertig:"Fertig"};
+
+function anzahl(){ return Math.max(2,Math.min(14,parseInt($("anz").value,10)||8)); }
+function randomData(n){ const s=new Set(); while(s.size<n) s.add(5+Math.floor(Math.random()*95)); return Array.from(s); }
+
+function build(keep){
+  if(!keep) data=randomData(anzahl());
+  mode=$("mode").value;
+  steps=genQuick(data,mode); pos=0;
+  $("inp").value=data.join(" "); $("anz").value=data.length;
+  buildTrace();
+  render();
+}
+
+function render(){
+  const st=steps[pos],arr=st.arr,n=arr.length,mx=Math.max.apply(null,arr);
+  const w = n<=6?86 : n<=10?62 : 48;
+  const vis=$("vis"); vis.innerHTML="";
+  const has=(key,k)=>(st.hi[key]||[]).indexOf(k)>=0;
+  for(let k=0;k<n;k++){
+    const c=document.createElement("div"); c.className="col"; c.style.width=w+"px";
+    if(has("reg",k)) c.classList.add("reg");
+    if(has("small",k)) c.classList.add("small");
+    if(has("cmpj",k)) c.classList.add("cmpj","act");
+    if(has("piv",k)) c.classList.add("piv");
+    if(st.fix.indexOf(k)>=0) c.classList.add("fix");
+    let m="";
+    if(has("piv",k)) m="Pivot";
+    else if(has("cmpj",k)) m="j";
+    c.innerHTML='<div class="mark">'+m+'</div><div class="val">'+arr[k]+'</div><div class="bar" style="height:'+
+      Math.round(26+(arr[k]/mx)*120)+'px"></div><div class="idx">'+k+'</div>';
+    vis.appendChild(c);
+  }
+  const b=$("badge"); b.className="badge"+(BADGE[st.op]?" "+BADGE[st.op]:""); b.innerHTML=LABEL[st.op];
+  $("optxt").innerHTML=st.text;
+  $("count").textContent="n = "+n+" · Schritt "+pos+" / "+(steps.length-1);
+  $("kV").textContent=st.cnt.v; $("kT").textContent=st.cnt.t; $("kD").textContent=st.cnt.d;
+  $("kL").textContent=Math.ceil(Math.log2(n));
+  $("kDbox").className = st.cnt.d > 2*Math.ceil(Math.log2(n)) ? "hot" : "cool";
+
+  // Baum
+  const maxD=Math.max.apply(null,st.nodes.map(x=>x.depth).concat([0]));
+  const tree=$("tree"); tree.innerHTML="";
+  for(let d=0;d<=maxD;d++){
+    const row=document.createElement("div"); row.className="lvlrow";
+    const tag=document.createElement("div"); tag.className="lvltag"; tag.textContent="Ebene "+d;
+    const lvl=document.createElement("div"); lvl.className="lvl";
+    lvl.style.gridTemplateColumns="repeat("+n+",minmax(0,1fr))";
+    st.nodes.filter(x=>x.depth===d).forEach(nd=>{
+      const el=document.createElement("div");
+      if(nd.empty){
+        el.className="node empty";
+        const col=Math.max(1,Math.min(n,nd.lo+1));
+        el.style.gridColumn=col+" / span 1";
+        el.textContent="leer";
+      }else{
+        el.className="node "+nd.st;
+        el.style.gridColumn=(nd.lo+1)+" / span "+(nd.hi-nd.lo+1);
+        el.style.setProperty("--c", nd.hi-nd.lo+1);
+        let h="";
+        for(let q=nd.lo;q<=nd.hi;q++){
+          let cl="chip";
+          if(nd.piv===q) cl+=" f";
+          else if(nd.st==="active" && (st.hi.piv||[]).indexOf(q)>=0) cl+=" p";
+          else if(nd.st==="active" && (st.hi.cmpj||[]).indexOf(q)>=0) cl+=" j";
+          h+='<span class="'+cl+'">'+st.arr[q]+'</span>';
+        }
+        el.innerHTML=h;
+      }
+      lvl.appendChild(el);
+    });
+    row.appendChild(tag); row.appendChild(lvl); tree.appendChild(row);
+  }
+
+  // Hinweisbox
+  const tiefe=st.cnt.d, ideal=Math.ceil(Math.log2(n));
+  let hw="";
+  if(pos===steps.length-1){
+    if(tiefe>=n-1) hw='<div class="box bad"><b>Worst Case erreicht.</b> Die Rekursionstiefe ist '+tiefe+
+      ' &ndash; der Baum ist zu einer Kette entartet, weil bei jedem Zerlegen eine Teilliste leer blieb. Vergleiche: '+st.cnt.v+
+      ' (das sind genau n&middot;(n&minus;1)/2 = '+(n*(n-1)/2)+'). Bei guter Pivotwahl l&auml;ge man in der Gr&ouml;&szlig;enordnung n&middot;log&#8322;(n) = '+Math.round(n*Math.log2(n))+' oder darunter.</div>';
+    else if(tiefe<=ideal) hw='<div class="box ok"><b>Best Case.</b> Die Rekursionstiefe ist '+tiefe+' und damit so klein wie m&ouml;glich (log&#8322;('+n+') = '+ideal+
+      '). Jedes Pivot hat die Teilliste fast exakt halbiert. Vergleiche: '+st.cnt.v+'.</div>';
+    else hw='<div class="box"><b>Normalfall.</b> Rekursionstiefe '+tiefe+', Vergleiche '+st.cnt.v+
+      '. Das liegt zwischen dem Ideal (log&#8322;n = '+ideal+') und der Kette (n&minus;1 = '+(n-1)+').</div>';
+  }
+  $("hinweis").innerHTML=hw;
+
+  $("prev").disabled=pos===0;
+  $("next").disabled=pos>=steps.length-1;
+  if(pos>=steps.length-1) stop();
+}
+
+/* ===================== STEUERUNG ===================== */
+function delay(){ return 1150-$("speed").value*100; }
+function stop(){ playing=false; clearTimeout(timer); $("play").innerHTML="&#9654; Abspielen"; }
+function tick(){ if(!playing) return; if(pos>=steps.length-1){stop();return;}
+  pos++; render(); if(playing) timer=setTimeout(tick,delay()); }
+$("play").onclick=()=>{ if(playing){stop();return;} if(pos>=steps.length-1) pos=0;
+  playing=true; $("play").innerHTML="&#10073;&#10073; Pause"; render(); timer=setTimeout(tick,delay()); };
+$("next").onclick=()=>{ stop(); if(pos<steps.length-1){pos++;render();} };
+$("prev").onclick=()=>{ stop(); if(pos>0){pos--;render();} };
+$("reset").onclick=()=>{ stop(); pos=0; render(); };
+$("rnd").onclick=()=>{ stop(); build(false); };
+$("anz").onchange=()=>{ stop(); $("anz").value=anzahl(); build(false); };
+$("mode").onchange=()=>{ stop(); build(true); };
+$("sorted").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>x-y); build(true); };
+$("rev").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>y-x); build(true); };
+$("demoBad").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>x-y); $("mode").value="last"; build(true);
+  $("optxt").innerHTML="<b>Worst Case:</b> sortierte Liste und Pivot = letztes Element. Spiele ab und beachte den Baum."; };
+$("demoGood").onclick=()=>{ stop(); data=data.slice().sort((x,y)=>x-y); $("mode").value="mid"; build(true);
+  $("optxt").innerHTML="<b>Best Case:</b> dieselbe sortierte Liste, aber Pivot = mittleres Element."; };
+$("use").onclick=()=>{ const nums=$("inp").value.split(/[^0-9]+/).filter(s=>s!=="").map(Number).slice(0,14);
+  if(nums.length<2){ alert("Bitte 2 bis 14 Zahlen eingeben."); return; }
+  stop(); data=nums; build(true); };
+$("inp").addEventListener("keydown",e=>{ if(e.key==="Enter") $("use").click(); });
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT") return;
+  if(!$("p1").classList.contains("on")) return;
+  if(e.code==="Space"){ e.preventDefault(); $("play").click(); }
+  if(e.key==="ArrowRight"){ e.preventDefault(); $("next").click(); }
+  if(e.key==="ArrowLeft"){ e.preventDefault(); $("prev").click(); }
+});
+$("tabs").onclick=e=>{
+  const t=e.target.closest(".tab"); if(!t) return;
+  stop();
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("on",x===t));
+  document.querySelectorAll(".page").forEach(p=>p.classList.toggle("on",p.id===t.dataset.page));
+};
+
+/* ===================== SEITE 2: MESSUNG ===================== */
+function zaehleQuick(arr,mode){
+  const a=arr.slice(); let v=0,maxd=0;
+  const swap=(x,y)=>{const t=a[x];a[x]=a[y];a[y]=t;};
+  const stack=[[0,a.length-1,0]];
+  while(stack.length){
+    const cur=stack.pop(), lo=cur[0], hi=cur[1], d=cur[2];
+    if(lo>=hi) continue;
+    if(d>maxd) maxd=d;
+    let pi = mode==="last"?hi : mode==="first"?lo : (lo+hi)>>1;
+    if(pi!==hi) swap(pi,hi);
+    const pivot=a[hi];
+    let i=lo-1;
+    for(let j=lo;j<hi;j++){ v++; if(a[j]<=pivot){ i++; if(i!==j) swap(i,j); } }
+    swap(i+1,hi);
+    stack.push([lo,i,d+1]); stack.push([i+2,hi,d+1]);
+  }
+  return {v:v,d:maxd+1};
+}
+function tabelle(){
+  const ns=[16,32,64,128,256,512];
+  let h="<thead><tr><th>n</th>"
+   +"<th>zuf&auml;llig<br>letztes Pivot</th><th>Tiefe</th>"
+   +"<th>sortiert<br>letztes Pivot</th><th>Tiefe</th>"
+   +"<th>sortiert<br>mittleres Pivot</th><th>Tiefe</th>"
+   +"<th>n&middot;log&#8322;n</th><th>n(n&minus;1)/2</th></tr></thead><tbody>";
+  ns.forEach(n=>{
+    const zuf=[]; for(let i=0;i<n;i++) zuf.push(Math.random());
+    const srt=zuf.slice().sort((a,b)=>a-b);
+    const A=zaehleQuick(zuf,"last"), B=zaehleQuick(srt,"last"), C=zaehleQuick(srt,"mid");
+    h+="<tr><td>"+n+"</td>"
+      +"<td>"+A.v+"</td><td>"+A.d+"</td>"
+      +'<td class="bad">'+B.v+'</td><td class="bad">'+B.d+"</td>"
+      +'<td class="good">'+C.v+'</td><td class="good">'+C.d+"</td>"
+      +"<td>"+Math.round(n*Math.log2(n))+"</td><td>"+(n*(n-1)/2).toLocaleString("de-DE")+"</td></tr>";
+  });
+  $("tab").innerHTML=h+"</tbody>";
+}
+function chart(){
+  const ns=[8,16,32,64,128], W=880,H=270,ml=62,mb=34,mt=12,mr=290;
+  const worst=[],bestm=[],zuf=[];
+  ns.forEach(n=>{
+    const z=[]; for(let i=0;i<n;i++) z.push(Math.random());
+    const s=z.slice().sort((a,b)=>a-b);
+    worst.push(zaehleQuick(s,"last").v);
+    bestm.push(zaehleQuick(s,"mid").v);
+    zuf.push(zaehleQuick(z,"last").v);
+  });
+  const maxY=Math.max.apply(null,worst);
+  const X=i=>ml+(i/(ns.length-1))*(W-ml-mr), Y=v=>H-mb-(v/maxY)*(H-mb-mt);
+  const path=ys=>ys.map((v,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(v).toFixed(1)).join(" ");
+  let s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;max-width:'+W+'px;height:auto">';
+  s+='<line x1="'+ml+'" y1="'+(H-mb)+'" x2="'+(W-mr)+'" y2="'+(H-mb)+'" stroke="currentColor" opacity=".3"/>';
+  s+='<line x1="'+ml+'" y1="'+mt+'" x2="'+ml+'" y2="'+(H-mb)+'" stroke="currentColor" opacity=".3"/>';
+  ns.forEach((n,i)=>{ s+='<text x="'+X(i)+'" y="'+(H-mb+15)+'" text-anchor="middle">n='+n+'</text>'; });
+  [0,.5,1].forEach(f=>{ const v=maxY*f;
+    s+='<text x="'+(ml-8)+'" y="'+(Y(v)+4)+'" text-anchor="end">'+Math.round(v).toLocaleString("de-DE")+'</text>'; });
+  const S=[[worst,"#ef4444","sortiert + letztes Pivot (Worst)"],
+           [zuf,"#2563eb","zuf&auml;llig + letztes Pivot"],
+           [bestm,"#22c55e","sortiert + mittleres Pivot (Best)"]];
+  S.forEach((se,k)=>{
+    s+='<path d="'+path(se[0])+'" fill="none" stroke="'+se[1]+'" stroke-width="2.5"/>';
+    se[0].forEach((v,i)=>{ s+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3.5" fill="'+se[1]+'"/>'; });
+    s+='<rect x="'+(W-mr+6)+'" y="'+(mt+8+k*22)+'" width="11" height="11" rx="3" fill="'+se[1]+'"/>';
+    s+='<text x="'+(W-mr+23)+'" y="'+(mt+18+k*22)+'">'+se[2]+'</text>';
+  });
+  $("chart").innerHTML=s+'</svg>';
+}
+
+/* ===================== SEITE 3 ===================== */
+const CODE1=[
+ '<span class="kw">def</span> <span class="fn">quick_sort</span>(liste):',
+ '    <span class="kw">if</span> len(liste) &lt;= <span class="nm">1</span>:',
+ '        <span class="kw">return</span> liste',
+ '',
+ '    pivot = liste[<span class="nm">0</span>]         <span class="cm"># erstes Element</span>',
+ '    rest  = liste[<span class="nm">1</span>:]        <span class="cm"># alles ausser dem Pivot</span>',
+ '',
+ '    kleiner  = []',
+ '    groesser = []',
+ '    <span class="kw">for</span> x <span class="kw">in</span> rest:',
+ '        <span class="kw">if</span> x &lt;= pivot:',
+ '            kleiner.append(x)',
+ '        <span class="kw">else</span>:',
+ '            groesser.append(x)',
+ '',
+ '    <span class="kw">return</span> <span class="fn">quick_sort</span>(kleiner) + [pivot] + <span class="fn">quick_sort</span>(groesser)'
+];
+const CODE2=[
+ '<span class="kw">def</span> <span class="fn">quick_sort</span>(liste):',
+ '    <span class="kw">if</span> len(liste) &lt;= <span class="nm">1</span>:',
+ '        <span class="kw">return</span> liste',
+ '',
+ '    m = len(liste) <span class="nm">//</span> <span class="nm">2</span>       <span class="cm"># Position der Mitte</span>',
+ '    pivot = liste[m]',
+ '    rest  = liste[:m] + liste[m+<span class="nm">1</span>:]',
+ '',
+ '    kleiner  = []',
+ '    groesser = []',
+ '    <span class="kw">for</span> x <span class="kw">in</span> rest:',
+ '        <span class="kw">if</span> x &lt;= pivot:',
+ '            kleiner.append(x)',
+ '        <span class="kw">else</span>:',
+ '            groesser.append(x)',
+ '',
+ '    <span class="kw">return</span> <span class="fn">quick_sort</span>(kleiner) + [pivot] + <span class="fn">quick_sort</span>(groesser)'
+];
+function renderCode(id,arr){
+  $(id).innerHTML=arr.map((l,k)=>'<div class="line"><span class="ln">'+(k+1)+'</span><span>'+l+'</span></div>').join("");
+}
+
+let traceLines=[],traceShown=0;
+function buildTrace(){
+  const L=[], tm=$("tmode").value;
+  const f=x=>"["+x.join(", ")+"]";
+  (function qsr(l,d){
+    const ind="   ".repeat(d);
+    L.push({t:ind+"quick_sort("+f(l)+")",k:"call"});
+    if(l.length<=1){ L.push({t:ind+"  -> "+f(l),k:"ret"}); return l.slice(); }
+    let m = tm==="first" ? 0 : l.length>>1;
+    const pivot=l[m], rest=l.slice(0,m).concat(l.slice(m+1));
+    const kl=[],gr=[];
+    rest.forEach(x=>{ if(x<=pivot) kl.push(x); else gr.push(x); });
+    L.push({t:ind+"  pivot = "+pivot+"   kleiner = "+f(kl)+"   groesser = "+f(gr),k:"piv"});
+    const A=qsr(kl,d+1), B=qsr(gr,d+1);
+    const out=A.concat([pivot],B);
+    L.push({t:ind+"  -> "+f(A)+" + ["+pivot+"] + "+f(B)+" = "+f(out),k:"ret"});
+    return out;
+  })(data.slice(),0);
+  traceLines=L; traceShown=0; renderTrace();
+}
+function renderTrace(){
+  $("trace").innerHTML=traceLines.map((l,k)=>
+    '<div class="tl '+l.k+'" style="'+(k>=traceShown?"visibility:hidden":"")+'">'+l.t+'</div>').join("");
+  $("tinfo").textContent="Zeile "+traceShown+" / "+traceLines.length;
+}
+$("tnext").onclick=()=>{ if(traceShown<traceLines.length){ traceShown++; renderTrace(); } };
+$("tall").onclick=()=>{ traceShown=traceLines.length; renderTrace(); };
+$("treset").onclick=()=>{ traceShown=0; renderTrace(); };
+$("tmode").onchange=()=>{ buildTrace(); };
+
+/* ===================== START ===================== */
+renderCode("code1",CODE1); renderCode("code2",CODE2);
+tabelle(); chart();
+build(false);
+</script>
+</body>
+</html>
