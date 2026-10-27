@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Proteinbiosynthese">
+<meta name="theme-color" content="#0f766e">
+<title>Proteinbiosynthese – Lernstationen</title>
+<style>
+*{box-sizing:border-box}
+:root{color-scheme:light;--bg:#f3f6f5;--card:#fff;--ink:#17262a;--muted:#5c6c6f;--line:#d5dedd;--accent:#0f766e;--accent-soft:#ccfbf1;--ok:#15803d;--ok-bg:#dcfce7;--bad:#b91c1c;--bad-bg:#fee2e2;--sel:#d97706;--chip:#e9f6f3;--chip-b:#8fcfc3;--r:14px;--mono:ui-monospace,Menlo,Consolas,monospace}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{touch-action:manipulation;cursor:pointer}
+body.nosel{-webkit-user-select:none;user-select:none}
+h1,h2,h3{line-height:1.2;margin:0}
+.muted{color:var(--muted)} .small{font-size:14px}
+/* Kopfzeile */
+.topbar{position:sticky;top:0;z-index:50;display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) 10px max(16px,env(safe-area-inset-left));background:var(--accent);color:#fff}
+.topbar .t{font-weight:700;font-size:18px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar .u{font-size:14px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.topbar button{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:10px;min-height:40px;padding:0 12px}
+main{max-width:1080px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-left)) 56px}
+.card{background:var(--card);border-radius:var(--r);box-shadow:0 1px 3px rgba(0,0,0,.06);padding:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:48px;padding:0 18px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font-weight:600;text-align:center}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--accent);padding:0 8px}
+.btn.small{min-height:42px;font-size:15px;padding:0 14px}
+.btn:active{transform:scale(.98)}
+/* Übersicht */
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:14px;justify-content:space-between;margin-bottom:12px}
+.hero p{margin:4px 0 0}
+.pbar{height:10px;background:#e2e8e7;border-radius:6px;overflow:hidden}
+.pbar>i{display:block;height:100%;background:var(--accent)}
+.group{margin:24px 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700}
+.tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.tile{display:flex;flex-direction:column;gap:6px;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:var(--r);padding:16px;min-height:122px}
+.tile .ty{font-size:13px;color:var(--accent);font-weight:700}
+.tile .tt{font-weight:700;font-size:17px}
+.tile .ts{margin-top:auto;font-size:14px;color:var(--muted)}
+.tile.done{border-color:#86efac;background:#f6fef8}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:13px;font-weight:700;background:#eef2f1;color:var(--ink)}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+/* Station */
+.st-head{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.kicker{font-size:13px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.auftrag{background:#fff;border-left:4px solid var(--accent);border-radius:8px;padding:12px 14px;margin:10px 0 6px}
+.wertung{font-size:13px;color:var(--muted);margin:0 0 14px 4px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:16px}
+.feedback{margin-top:14px}
+.feedback:empty{display:none}
+.fbox{border-radius:12px;padding:12px 14px;font-weight:600;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.fbox.ok{background:var(--ok-bg);color:var(--ok)} .fbox.bad{background:var(--bad-bg);color:var(--bad)} .fbox.info{background:#e8eeed;color:var(--ink)}
+.roundinfo{font-weight:700;color:var(--muted);font-size:14px;margin-bottom:6px}
+.task{margin:0 0 8px}
+.toolrow{margin-top:12px}
+.donebox{text-align:center}
+.donebox .big{font-size:48px;font-weight:800;color:var(--accent)}
+/* Ziehen & Ablegen */
+.chip{display:inline-flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;padding:8px 12px;min-height:42px;background:var(--chip);border:2px solid var(--chip-b);border-radius:10px;font-size:15px;font-weight:600;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;cursor:grab;max-width:100%}
+.chip.selected{border-color:var(--sel);box-shadow:0 0 0 3px rgba(217,119,6,.3);background:#fff7ed}
+.chip.lifted{opacity:.35}
+.chip.ghost{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-50%) scale(1.06);box-shadow:0 8px 24px rgba(0,0,0,.22);margin:0}
+.chip.ok{border-color:var(--ok);background:var(--ok-bg)} .chip.bad{border-color:var(--bad);background:var(--bad-bg)}
+.bank-label{font-size:13px;font-weight:700;color:var(--muted);margin:14px 0 6px;text-transform:uppercase;letter-spacing:.05em}
+.bank{display:flex;flex-wrap:wrap;gap:8px;min-height:64px;padding:10px;border:2px dashed var(--line);border-radius:var(--r);background:#fff}
+.bank.over{border-color:var(--sel)}
+.zone{display:flex;align-items:center;justify-content:center;border:2px dashed #7fb1a9;border-radius:10px;background:#fff;min-height:46px;padding:2px;transition:background .15s,border-color .15s}
+.picking .zone{border-color:var(--sel);background:#fffbeb}
+.zone.over{border-color:var(--sel);border-style:solid;background:#fef3c7}
+.zone.ok{border:2px solid var(--ok);background:var(--ok-bg)} .zone.bad{border:2px solid var(--bad);background:var(--bad-bg)}
+.diagram{position:relative;background:#fbfdfc;border-radius:var(--r);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.diagram svg{display:block;width:100%;height:auto}
+.diagram .zone{position:absolute;transform:translate(-50%,-50%);width:19%}
+.diagram .zone .chip{width:100%;font-size:13.5px;padding:4px 6px;min-height:36px}
+.lead{stroke:#334155;stroke-width:2.5}
+.leaddot{fill:#334155;stroke:#fff;stroke-width:2}
+@media (max-width:620px){.diagram .zone .chip{font-size:10.5px;padding:2px 3px;min-height:28px}.diagram .zone{min-height:32px}}
+/* Zuordnen */
+.match{display:flex;flex-direction:column;gap:10px}
+.mrow{display:flex;gap:12px;align-items:center;background:#fff;border-radius:12px;padding:8px;border:1.5px solid var(--line)}
+.mrow .zone{width:220px;flex:none;min-height:52px}
+.mrow .zone .chip{width:100%}
+.mdesc{flex:1}
+@media (max-width:600px){.mrow{flex-direction:column;align-items:stretch}.mrow .zone{width:100%}}
+/* Sortieren */
+.cats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.cat{display:flex;flex-direction:column;gap:6px}
+.cat-h{font-weight:700;text-align:center}
+.zone.multi{min-height:240px;flex-wrap:wrap;align-content:flex-start;align-items:flex-start;justify-content:flex-start;gap:6px;padding:8px}
+.zone.multi .chip{width:100%;font-size:14px}
+.bank .chip.long{font-size:14px}
+@media (max-width:700px){.cats{grid-template-columns:1fr}.zone.multi{min-height:110px}}
+/* Reihenfolge */
+.olist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;counter-reset:o}
+.oitem{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px;counter-increment:o}
+.oitem::before{content:counter(o);flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+.oitem.dragging::before{visibility:hidden}
+.grip{flex:none;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#64748b;touch-action:none;cursor:grab;border-radius:10px;background:#f1f5f9;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.otext{flex:1;font-size:16px}
+.oarrows{display:flex;flex-direction:column;gap:4px}
+.ob{width:44px;height:32px;border-radius:8px;border:1.5px solid var(--line);background:#fff;font-size:13px;color:#475569}
+.oitem.dragging{position:fixed;z-index:1000;box-shadow:0 10px 30px rgba(0,0,0,.22);pointer-events:none;margin:0}
+.oplace{border:2px dashed var(--accent);border-radius:12px;background:rgba(20,184,166,.07)}
+.oitem.ok{border-color:var(--ok);background:#f6fef8} .oitem.bad{border-color:var(--bad);background:#fff7f7}
+/* Richtig/Falsch */
+.tflist{display:flex;flex-direction:column;gap:10px}
+.tf{background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.tf-btns{display:flex;gap:8px}
+.tfb{min-width:96px;min-height:46px;border-radius:10px;border:2px solid var(--line);background:#fff;font-weight:700}
+.tfb.on[data-v="1"]{background:#dbeafe;border-color:#2563eb;color:#1d4ed8}
+.tfb.on[data-v="0"]{background:#fef3c7;border-color:#d97706;color:#92400e}
+.tf.ok{border-color:var(--ok);background:#f6fef8} .tf.bad{border-color:var(--bad);background:#fff7f7}
+.tf-exp{grid-column:1/-1;font-size:15px;color:var(--muted)}
+@media (max-width:600px){.tf{grid-template-columns:1fr}}
+/* Sequenzen */
+.seqrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:10px 0}
+.seqrow .lbl{width:78px;font-weight:700;font-size:14px;color:var(--muted)}
+.end{font-weight:700;color:var(--muted);padding:0 4px}
+.nt{display:inline-flex;align-items:center;justify-content:center;width:34px;height:42px;border-radius:8px;font:700 19px var(--mono);background:#eef2f1;border:2px solid transparent;padding:0}
+.nt.dna{background:#e0e7ff;color:#3730a3}
+.nt.slot{background:#fff;border:2px dashed #94a3b8}
+.nt.slot.filled{border-style:solid;border-color:#fda4af;background:#fff1f2;color:#9f1239}
+.nt.slot.cur{border-color:var(--accent);border-style:solid}
+.nt.ok{background:var(--ok-bg)!important;border-color:var(--ok)!important;color:var(--ok)!important}
+.nt.bad{background:var(--bad-bg)!important;border-color:var(--bad)!important;color:var(--bad)!important}
+.keys{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.key{width:64px;height:58px;border-radius:12px;border:1.5px solid var(--line);background:#fff;font:700 24px var(--mono)}
+.key.wide{width:92px}
+/* Ergebnis */
+.rtable{width:100%;border-collapse:collapse;margin-top:12px;font-size:15px}
+.rtable th,.rtable td{padding:9px 8px;border-bottom:1px solid var(--line);text-align:left}
+.rtable td:not(:first-child),.rtable th:not(:first-child){text-align:right;white-space:nowrap}
+@media print{.topbar,.actions,.noprint,.feedback{display:none!important}body,html{background:#fff}.card{box-shadow:none}}
+</style>
+</head>
+<body>
+<header class="topbar" id="top"></header>
+<main id="app"></main>
+
+<script>
+"use strict";
+/* =====================================================================
+   KONFIGURATION – hier anpassen
+   ===================================================================== */
+const CONFIG = {
+  titel: "Proteinbiosynthese",
+  untertitel: "Biologie Q1 · Grundkurs · Hessen",
+  // Fortschritt wird nur im Browser des Geräts gespeichert (localStorage).
+  speicherPrefix: "pbs-v2:"
+};
+
+/* ===================== Hilfsfunktionen ===================== */
+const app = document.getElementById("app");
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const rnd = n => Math.floor(Math.random() * n);
+const pick = a => a[rnd(a.length)];
+function shuffle(a) { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const store = {
+  get(k) { try { const v = localStorage.getItem(CONFIG.speicherPrefix + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(CONFIG.speicherPrefix + k, JSON.stringify(v)); } catch (e) {} },
+  del(k) { try { localStorage.removeItem(CONFIG.speicherPrefix + k); } catch (e) {} }
+};
+
+/* ===================== Abbildungen ===================== */
+const SVG_TRANSKRIPTION = (() => {
+  let rungs = ""; for (let x = 72; x <= 412; x += 20) rungs += `<line x1="${x}" y1="205" x2="${x}" y2="295"/>`;
+  for (let x = 642; x <= 932; x += 20) rungs += `<line x1="${x}" y1="205" x2="${x}" y2="295"/>`;
+  let pair = ""; for (let x = 485; x <= 590; x += 15) pair += `<line x1="${x}" y1="317" x2="${x}" y2="326"/>`;
+  const nts = [[690, 395, "A"], [738, 362, "U"], [768, 414, "G"], [716, 447, "C"]].map(([x, y, b]) =>
+    `<circle cx="${x}" cy="${y}" r="16" fill="#fecdd3" stroke="#e11d48" stroke-width="2"/><text x="${x}" y="${y + 6}" fill="#9f1239">${b}</text>`).join("");
+  return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schema der Transkription">
+<defs><marker id="arT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10z" fill="#0f766e"/></marker></defs>
+<rect width="1000" height="600" fill="#fbfdfc"/>
+<rect x="120" y="186" width="110" height="128" rx="12" fill="#fde68a" opacity=".75"/>
+<rect x="790" y="186" width="110" height="128" rx="12" fill="#fecaca" opacity=".85"/>
+<g stroke="#a3b1c2" stroke-width="4" stroke-linecap="round">${rungs}</g>
+<path d="M60 200 L420 200 C445 200 450 170 475 170 L575 170 C600 170 605 200 630 200 L940 200" fill="none" stroke="#2563eb" stroke-width="9" stroke-linecap="round"/>
+<path d="M60 300 L420 300 C445 300 450 330 475 330 L575 330 C600 330 605 300 630 300 L940 300" fill="none" stroke="#7c3aed" stroke-width="9" stroke-linecap="round"/>
+<ellipse cx="525" cy="250" rx="125" ry="100" fill="#14b8a6" fill-opacity=".2" stroke="#0f766e" stroke-width="3"/>
+<g stroke="#a3b1c2" stroke-width="3">${pair}</g>
+<path d="M595 313 L470 313 C440 313 450 400 400 430 C360 455 330 465 300 470" fill="none" stroke="#e11d48" stroke-width="7" stroke-linecap="round"/>
+<g text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-weight="700" font-size="16">${nts}</g>
+<g font-family="-apple-system,Segoe UI,sans-serif" font-size="22" font-weight="700" fill="#334155" text-anchor="middle"><text x="34" y="208">5'</text><text x="966" y="208">3'</text><text x="34" y="308">3'</text><text x="966" y="308">5'</text><text x="280" y="497" fill="#e11d48">5'</text></g>
+<line x1="660" y1="128" x2="752" y2="128" stroke="#0f766e" stroke-width="5" stroke-linecap="round" marker-end="url(#arT)"/>
+</svg>`;
+})();
+
+const SVG_TRANSLATION = (() => {
+  const mrna = ["AUG", "UUC", "GGA", "CAU", "UGG", "AAA", "UAG"];
+  let bases = "", seps = "";
+  mrna.forEach((c, i) => { const s = 80 + 120 * i; seps += `<line x1="${s}" y1="370" x2="${s}" y2="394"/>`; [...c].forEach((b, j) => bases += `<text x="${s + 20 + 40 * j}" y="389">${b}</text>`); });
+  seps += `<line x1="920" y1="370" x2="920" y2="394"/>`;
+  const trna = (c, anti, hasAA, op) => {
+    let s = `<g opacity="${op}">`;
+    if (hasAA) s += `<line x1="${c}" y1="240" x2="${c}" y2="258" stroke="#b45309" stroke-width="5"/>`;
+    s += `<circle cx="${c - 30}" cy="292" r="13" fill="#fde68a" stroke="#b45309" stroke-width="2"/><circle cx="${c + 30}" cy="292" r="13" fill="#fde68a" stroke="#b45309" stroke-width="2"/>`;
+    s += `<rect x="${c - 14}" y="255" width="28" height="88" rx="9" fill="#fde68a" stroke="#b45309" stroke-width="2"/>`;
+    [...anti].forEach((b, j) => { const x = c - 40 + 40 * j; s += `<rect x="${x - 17}" y="340" width="34" height="27" rx="5" fill="#fef3c7" stroke="#b45309" stroke-width="2"/><text x="${x}" y="360" font-family="ui-monospace,Menlo,monospace" font-size="16" font-weight="700" fill="#78350f" text-anchor="middle">${b}</text>`; });
+    return s + "</g>";
+  };
+  const aaC = (x, y, t) => `<circle cx="${x}" cy="${y}" r="20" fill="#bbf7d0" stroke="#15803d" stroke-width="2"/><text x="${x}" y="${y + 4}" font-family="-apple-system,Segoe UI,sans-serif" font-size="12" font-weight="700" fill="#14532d" text-anchor="middle">${t}</text>`;
+  return `<svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schema der Translation">
+<rect width="1000" height="600" fill="#fbfdfc"/>
+<rect x="265" y="150" width="470" height="228" rx="90" fill="#bae6fd" stroke="#0369a1" stroke-width="3"/>
+<g fill="#e0f2fe" stroke="#7dd3fc" stroke-width="2"><rect x="325" y="232" width="110" height="136" rx="14"/><rect x="445" y="232" width="110" height="136" rx="14"/><rect x="565" y="232" width="110" height="136" rx="14"/></g>
+<ellipse cx="500" cy="428" rx="230" ry="44" fill="#c7d2fe" stroke="#4338ca" stroke-width="3"/>
+<rect x="40" y="369" width="920" height="26" rx="6" fill="#ffe4e6" stroke="#e11d48" stroke-width="2.5"/>
+<g stroke="#fda4af" stroke-width="2">${seps}</g>
+<g font-family="ui-monospace,Menlo,monospace" font-size="17" font-weight="700" fill="#9f1239" text-anchor="middle">${bases}</g>
+<g font-family="-apple-system,Segoe UI,sans-serif" font-size="20" font-weight="700" fill="#9f1239" text-anchor="middle"><text x="20" y="389">5'</text><text x="980" y="389">3'</text></g>
+<polyline points="500,222 488,178 470,136 445,100" fill="none" stroke="#15803d" stroke-width="4"/>
+${trna(380, "CCU", false, .7)}${trna(500, "GUA", true, 1)}${trna(620, "ACC", true, 1)}
+${aaC(445, 100, "Met")}${aaC(470, 136, "Phe")}${aaC(488, 178, "Gly")}${aaC(500, 222, "His")}${aaC(620, 222, "Trp")}
+</svg>`;
+})();
+
+/* ===================== Stationen (Inhalte) ===================== */
+const STATIONS = [
+  {
+    id: "t-label", gruppe: "Transkription", typ: "label", titel: "Transkription beschriften",
+    auftrag: "Beschrifte das Schema der Transkription. Ziehe die Begriffe in die Felder – oder tippe erst einen Begriff und dann ein Feld an. <b>Nicht alle Begriffe werden gebraucht.</b>",
+    svg: SVG_TRANSKRIPTION, vb: [1000, 600],
+    zones: [
+      { id: "promotor", text: "Promotor", x: 130, y: 55, tx: 175, ty: 192 },
+      { id: "codierend", text: "codierender Strang", x: 370, y: 55, tx: 330, ty: 200 },
+      { id: "polymerase", text: "RNA-Polymerase", x: 620, y: 55, tx: 560, ty: 160 },
+      { id: "terminator", text: "Terminator", x: 870, y: 55, tx: 845, ty: 192 },
+      { id: "codogen", text: "codogener Strang", x: 130, y: 545, tx: 260, ty: 300 },
+      { id: "mrna", text: "mRNA", x: 400, y: 545, tx: 398, ty: 432 },
+      { id: "ntp", text: "Ribonukleotide", x: 870, y: 545, tx: 728, ty: 405 }
+    ],
+    ablenker: ["Ribosom", "DNA-Polymerase", "tRNA"]
+  },
+  {
+    id: "t-order", gruppe: "Transkription", typ: "order", titel: "Ablauf der Transkription",
+    auftrag: "Bringe die Schritte der Transkription in einer <b>eukaryotischen Zelle</b> in die richtige Reihenfolge. Ziehe am Griff ⠿ oder nutze die Pfeile.",
+    schritte: [
+      "Die RNA-Polymerase bindet an den Promotor.",
+      "Die DNA-Doppelhelix wird lokal entwunden; die Wasserstoffbrücken zwischen den komplementären Basen werden gelöst.",
+      "Freie Ribonukleotide lagern sich komplementär an die Basen des codogenen Strangs an (A–U, T–A, G–C, C–G).",
+      "Die RNA-Polymerase verknüpft die Ribonukleotide in 5'→3'-Richtung und wandert dabei am codogenen Strang entlang (3'→5').",
+      "Am Terminator löst sich die RNA-Polymerase von der DNA; die mRNA wird freigesetzt.",
+      "Die mRNA verlässt den Zellkern durch die Kernporen und gelangt zu den Ribosomen im Cytoplasma."
+    ]
+  },
+  {
+    id: "t-dna", gruppe: "Transkription", typ: "transcribe", titel: "DNA → mRNA umschreiben", runden: 4,
+    auftrag: "Leite aus dem gegebenen DNA-Strang die mRNA ab. Achte genau darauf, <b>welcher Strang</b> gegeben ist, und auf die Enden (5'/3'). Die Aufgaben werden zufällig erzeugt."
+  },
+  {
+    id: "tr-label", gruppe: "Translation", typ: "label", titel: "Translation beschriften",
+    auftrag: "Beschrifte das Schema der Translation am Ribosom. <b>Nicht alle Begriffe werden gebraucht.</b>",
+    svg: SVG_TRANSLATION, vb: [1000, 600],
+    zones: [
+      { id: "kette", text: "Polypeptidkette", x: 300, y: 45, tx: 428, ty: 92 },
+      { id: "e", text: "E-Stelle", x: 130, y: 200, tx: 345, ty: 250 },
+      { id: "p", text: "P-Stelle", x: 590, y: 45, tx: 538, ty: 252 },
+      { id: "a", text: "A-Stelle", x: 830, y: 45, tx: 660, ty: 252 },
+      { id: "gross", text: "große Untereinheit", x: 880, y: 170, tx: 708, ty: 262 },
+      { id: "klein", text: "kleine Untereinheit", x: 130, y: 555, tx: 320, ty: 445 },
+      { id: "anti", text: "Anticodon", x: 400, y: 555, tx: 660, ty: 354 },
+      { id: "codon", text: "Codon", x: 650, y: 555, tx: 740, ty: 396 },
+      { id: "mrna", text: "mRNA", x: 880, y: 555, tx: 900, ty: 396 }
+    ],
+    ablenker: ["RNA-Polymerase", "Promotor", "Terminator"]
+  },
+  {
+    id: "tr-order", gruppe: "Translation", typ: "order", titel: "Ablauf der Translation",
+    auftrag: "Bringe die Schritte der Translation in die richtige Reihenfolge. Ziehe am Griff ⠿ oder nutze die Pfeile.",
+    schritte: [
+      "Die kleine ribosomale Untereinheit bindet mit der Start-tRNA (Methionin, Anticodon 3'-UAC-5') an die mRNA; die Start-tRNA paart mit dem Startcodon AUG.",
+      "Die große ribosomale Untereinheit lagert sich an; die Start-tRNA befindet sich in der P-Stelle.",
+      "Eine beladene tRNA, deren Anticodon zum nächsten Codon passt, bindet in der A-Stelle.",
+      "Die Aminosäure(kette) der tRNA in der P-Stelle wird per Peptidbindung an die Aminosäure der tRNA in der A-Stelle geknüpft.",
+      "Das Ribosom rückt um ein Codon in Richtung 3'-Ende weiter; die unbeladene tRNA gelangt in die E-Stelle und verlässt das Ribosom.",
+      "Ein Stoppcodon gelangt in die A-Stelle; es bindet keine passende tRNA.",
+      "Die Polypeptidkette wird abgelöst und die ribosomalen Untereinheiten trennen sich."
+    ]
+  },
+  {
+    id: "tf", gruppe: "Abschluss", typ: "tf", titel: "Richtig oder falsch?",
+    auftrag: "Entscheide für jede Aussage, ob sie fachlich richtig oder falsch ist. Nach dem Prüfen siehst du zu jeder Aussage eine Erklärung.",
+    aussagen: [
+      { t: "Bei der Transkription dient der codierende Strang als Matrize.", r: false, e: "Abgelesen wird der codogene Strang (Matrizenstrang). Die mRNA ist komplementär zu ihm und entspricht – mit U statt T – dem codierenden Strang." },
+      { t: "Die RNA-Polymerase beginnt die Transkription am Terminator.", r: false, e: "Die Transkription beginnt am Promotor und endet am Terminator." },
+      { t: "Die mRNA wird in 5'→3'-Richtung synthetisiert.", r: true, e: "Neue Ribonukleotide werden stets an das 3'-Ende der wachsenden Kette angehängt." },
+      { t: "In der RNA tritt Uracil an die Stelle von Thymin.", r: true, e: "Uracil paart wie Thymin mit Adenin." },
+      { t: "Die mRNA ist wie die DNA doppelsträngig.", r: false, e: "Die mRNA ist ein Einzelstrang; nur ein DNA-Abschnitt (der codogene Strang) wird abgeschrieben." },
+      { t: "Die RNA-Polymerase benötigt – wie die DNA-Polymerase – einen Primer.", r: false, e: "Die RNA-Polymerase kann eine RNA-Kette ohne Primer neu beginnen." },
+      { t: "Bei Eukaryoten findet die Translation im Zellkern statt.", r: false, e: "Die Transkription findet im Zellkern statt, die Translation an den Ribosomen im Cytoplasma." },
+      { t: "Ein Codon besteht aus drei aufeinanderfolgenden Basen der mRNA.", r: true, e: "Jeweils drei Basen (ein Triplett) bilden ein Codon." },
+      { t: "Das Anticodon der tRNA ist komplementär und antiparallel zum Codon der mRNA.", r: true, e: "Codon 5'-AUG-3' paart z. B. mit dem Anticodon 3'-UAC-5'." },
+      { t: "Neu ankommende beladene tRNAs binden in der A-Stelle des Ribosoms.", r: true, e: "In der A-Stelle bindet die tRNA, deren Anticodon zum Codon passt; die P-Stelle hält die tRNA mit der wachsenden Kette." },
+      { t: "Die unbeladene tRNA verlässt das Ribosom über die E-Stelle.", r: true, e: "Nach dem Weiterrücken gelangt die tRNA ohne Aminosäure in die E-Stelle (Exit) und wird freigesetzt." },
+      { t: "Das Ribosom liest die mRNA in 5'→3'-Richtung ab.", r: true, e: "Das Ribosom wandert vom 5'-Ende zum 3'-Ende der mRNA." },
+      { t: "Für die Stoppcodons gibt es tRNAs mit passenden Anticodons.", r: false, e: "Zu Stoppcodons passt keine tRNA – deshalb endet hier die Translation." },
+      { t: "Jede tRNA kann jede beliebige Aminosäure transportieren.", r: false, e: "Jede tRNA wird nur mit der Aminosäure beladen, die zu ihrem Anticodon passt." }
+    ]
+  }
+];
+const TYPNAME = { label: "Beschriften", order: "Reihenfolge", transcribe: "Übung · zufällig erzeugt", match: "Zuordnen", sort: "Sortieren", tf: "Richtig / Falsch" };
+
+/* ===================== Fortschritt (nur im Browser) ===================== */
+let progress = store.get("progress") || {};
+function record(id, pct) {
+  const p = progress[id] || { runs: 0, best: 0 };
+  if (p.first === undefined) p.first = pct;
+  p.runs++; p.best = Math.max(p.best, pct); p.last = pct; p.time = Date.now();
+  progress[id] = p; store.set("progress", progress);
+}
+function resetProgress() { progress = {}; store.del("progress"); }
+
+/* ===================== Rahmen & Navigation ===================== */
+function renderTopbar() {
+  $("#top").innerHTML = `<span class="t">🧬 ${esc(CONFIG.titel)}</span><button data-act="home">Übersicht</button>`;
+}
+function feedback(msg, kind, extra = "") {
+  const fb = $("#fb"); if (!fb) return;
+  fb.innerHTML = `<div class="fbox ${kind}"><span>${msg}</span>${extra ? `<span>${extra}</span>` : ""}</div>`;
+  fb.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+function nextHTML(st) {
+  const n = STATIONS[STATIONS.indexOf(st) + 1];
+  return n ? `<button class="btn primary" data-act="open" data-id="${n.id}">Weiter: ${esc(n.titel)} ›</button>` : `<button class="btn primary" data-act="report">Zur Ergebnisübersicht ›</button>`;
+}
+function frame(st, body, actions) {
+  return `<div class="st-head"><button class="btn ghost" data-act="home">‹ Übersicht</button></div>
+  <div class="kicker">${esc(st.gruppe)}</div><h2>${esc(st.titel)}</h2>
+  <div class="auftrag">${st.auftrag}</div>
+  <p class="wertung">Gewertet wird jeweils der erste Prüfversuch eines Durchgangs.</p>
+  <div class="st-body">${body}</div>
+  <div class="feedback" id="fb" aria-live="polite"></div>
+  <div class="actions">${actions}</div>`;
+}
+function openStation(id) {
+  const st = STATIONS.find(s => s.id === id); if (!st) return renderHome();
+  window.scrollTo(0, 0);
+  ({ label: renderLabel, match: renderMatch, sort: renderSort, order: renderOrder, tf: renderTF,
+     transcribe: s => renderRounds(s, roundTranscribe) })[st.typ](st);
+}
+document.addEventListener("click", e => {
+  const a = e.target.closest("[data-act]"); if (!a) return;
+  const act = a.dataset.act;
+  if (act === "home") renderHome();
+  else if (act === "open") openStation(a.dataset.id);
+  else if (act === "report") renderReport();
+  else if (act === "reset-all") { if (confirm("Gesamten Fortschritt auf diesem Gerät löschen?")) { resetProgress(); renderHome(); } }
+});
+
+/* ===================== Ziehen & Ablegen (Touch + Maus) ===================== */
+let activeDrag = null;
+window.addEventListener("pointermove", e => { if (activeDrag) { e.preventDefault(); activeDrag.move(e); } }, { passive: false });
+window.addEventListener("pointerup", e => { if (activeDrag) activeDrag.up(e); });
+window.addEventListener("pointercancel", e => { if (activeDrag) activeDrag.cancel(e); });
+
+function setupDnD(root) {
+  let sel = null;
+  const bank = () => $(".bank", root);
+  const cap = z => z.classList.contains("bank") ? Infinity : (+z.dataset.cap || 1);
+  const unmark = (...els) => els.forEach(x => x && x.classList && x.classList.remove("ok", "bad"));
+  function place(chip, zone) {
+    const from = chip.parentElement;
+    if (!zone || zone === from) return;
+    if (cap(zone) !== Infinity) {
+      const ex = $$(".chip", zone);
+      if (ex.length >= cap(zone)) { const back = (from.classList.contains("zone") || from.classList.contains("bank")) ? from : bank(); back.appendChild(ex[0]); unmark(ex[0]); }
+    }
+    zone.appendChild(chip); unmark(chip, zone, from);
+  }
+  function select(c) { if (sel) sel.classList.remove("selected"); sel = c; if (c) c.classList.add("selected"); root.classList.toggle("picking", !!c); }
+  function zoneAt(x, y) { const t = document.elementFromPoint(x, y); const z = t && t.closest(".zone,.bank"); return z && root.contains(z) ? z : null; }
+  root.addEventListener("pointerdown", e => {
+    const chip = e.target.closest(".chip"); if (!chip || !root.contains(chip)) return;
+    e.preventDefault();
+    const x0 = e.clientX, y0 = e.clientY; let ghost = null, over = null;
+    const clearOver = () => { if (over) over.classList.remove("over"); over = null; };
+    activeDrag = {
+      move(ev) {
+        if (!ghost) {
+          if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
+          ghost = chip.cloneNode(true); ghost.classList.add("ghost"); ghost.classList.remove("selected", "ok", "bad");
+          ghost.style.width = chip.getBoundingClientRect().width + "px"; document.body.appendChild(ghost);
+          chip.classList.add("lifted"); select(null); document.body.classList.add("nosel");
+        }
+        ghost.style.left = ev.clientX + "px"; ghost.style.top = ev.clientY + "px";
+        const z = zoneAt(ev.clientX, ev.clientY); if (z !== over) { clearOver(); over = z; if (z) z.classList.add("over"); }
+      },
+      up(ev) {
+        activeDrag = null; document.body.classList.remove("nosel");
+        if (ghost) { ghost.remove(); chip.classList.remove("lifted"); clearOver(); const z = zoneAt(ev.clientX, ev.clientY); if (z) place(chip, z); }
+        else {
+          const inZone = chip.parentElement.classList.contains("zone");
+          if (sel && sel !== chip && inZone) { place(sel, chip.parentElement); select(null); }
+          else select(sel === chip ? null : chip);
+        }
+      },
+      cancel() { activeDrag = null; document.body.classList.remove("nosel"); if (ghost) { ghost.remove(); chip.classList.remove("lifted"); } clearOver(); }
+    };
+  });
+  root.addEventListener("click", e => {
+    if (!sel || e.target.closest(".chip")) return;
+    const z = e.target.closest(".zone,.bank"); if (z && root.contains(z)) { place(sel, z); select(null); }
+  });
+}
+const chipHTML = c => `<div class="chip${c.t.length > 28 ? " long" : ""}" data-id="${c.id}"${c.k ? ` data-cat="${c.k}"` : ""}>${esc(c.t)}</div>`;
+
+/* Standard-Prüflogik für Beschriften, Zuordnen, Sortieren, Reihenfolge, R/F */
+function bindStd(st, check, solve) {
+  let recorded = false;
+  $("#check").onclick = () => {
+    const r = check(); if (r.incomplete) { feedback(r.incomplete, "info"); return; }
+    const pct = Math.round(100 * r.ok / r.total);
+    if (!recorded) { recorded = true; record(st.id, pct); }
+    if (r.ok === r.total) { feedback("✓ Alles richtig!", "ok", nextHTML(st)); return; }
+    feedback(`${r.ok} von ${r.total} richtig (${pct} %). Korrigiere die rot markierten Stellen und prüfe erneut.`, "bad", `<button class="btn small" id="solve">Lösung zeigen</button>`);
+    $("#solve").onclick = () => { solve(); check(); feedback("Das ist die Lösung. Präge sie dir ein und starte später mit „Neu mischen“ einen neuen Durchgang.", "info", nextHTML(st)); };
+  };
+  $("#reset").onclick = () => openStation(st.id);
+}
+const actionsStd = () => `<button class="btn" id="reset">Neu mischen</button><button class="btn primary" id="check">Prüfen</button>`;
+function checkZones(root) {
+  const zs = $$(".zone", root);
+  if (zs.some(z => !$(".chip", z))) return { incomplete: "Fülle zuerst alle Felder aus." };
+  let ok = 0;
+  zs.forEach(z => { const c = $(".chip", z); const g = z.dataset.accept === c.dataset.id; z.classList.toggle("ok", g); z.classList.toggle("bad", !g); if (g) ok++; });
+  return { ok, total: zs.length };
+}
+function solveZones(root) {
+  const bank = $(".bank", root);
+  $$(".zone .chip", root).forEach(c => bank.appendChild(c));
+  $$(".zone", root).forEach(z => { const c = $(`.chip[data-id="${z.dataset.accept}"]`, root); if (c) z.appendChild(c); });
+}
+
+/* ===================== Aufgabentyp: Beschriften ===================== */
+function renderLabel(st) {
+  const [W, H] = st.vb;
+  const lines = st.zones.map(z => `<line x1="${z.x}" y1="${z.y}" x2="${z.tx}" y2="${z.ty}" class="lead"/><circle cx="${z.tx}" cy="${z.ty}" r="6" class="leaddot"/>`).join("");
+  const svg = st.svg.replace("</svg>", `<g>${lines}</g></svg>`);
+  const zones = st.zones.map(z => `<div class="zone" data-accept="${z.id}" style="left:${z.x / W * 100}%;top:${z.y / H * 100}%"></div>`).join("");
+  const chips = shuffle([...st.zones.map(z => ({ id: z.id, t: z.text })), ...(st.ablenker || []).map((t, i) => ({ id: "x" + i, t }))]);
+  app.innerHTML = frame(st, `<div class="diagram">${svg}${zones}</div><div class="bank-label">Begriffe</div><div class="bank">${chips.map(chipHTML).join("")}</div>`, actionsStd());
+  const root = $(".st-body"); setupDnD(root);
+  bindStd(st, () => checkZones(root), () => solveZones(root));
+}
+
+/* ===================== Aufgabentyp: Zuordnen ===================== */
+function renderMatch(st) {
+  const rows = shuffle(st.paare).map(p => `<div class="mrow"><div class="zone" data-accept="${p.id}"></div><div class="mdesc">${esc(p.d)}</div></div>`).join("");
+  const chips = shuffle(st.paare.map(p => ({ id: p.id, t: p.t })));
+  app.innerHTML = frame(st, `<div class="match">${rows}</div><div class="bank-label">Eigenschaften</div><div class="bank">${chips.map(chipHTML).join("")}</div>`, actionsStd());
+  const root = $(".st-body"); setupDnD(root);
+  bindStd(st, () => checkZones(root), () => solveZones(root));
+}
+
+/* ===================== Aufgabentyp: Sortieren ===================== */
+function renderSort(st) {
+  const cats = st.kategorien.map(c => `<div class="cat"><div class="cat-h">${esc(c.name)}</div><div class="zone multi" data-cap="99" data-cat="${c.id}"></div></div>`).join("");
+  const chips = shuffle(st.items.map((it, i) => ({ id: "i" + i, t: it.t, k: it.k })));
+  app.innerHTML = frame(st, `<div class="cats">${cats}</div><div class="bank-label">Merkmale</div><div class="bank">${chips.map(chipHTML).join("")}</div>`, actionsStd());
+  const root = $(".st-body"); setupDnD(root);
+  bindStd(st, () => {
+    if ($$(".bank .chip", root).length) return { incomplete: "Ordne zuerst alle Merkmale zu." };
+    let ok = 0; const all = $$(".zone .chip", root);
+    all.forEach(c => { const g = c.dataset.cat === c.parentElement.dataset.cat; c.classList.toggle("ok", g); c.classList.toggle("bad", !g); if (g) ok++; });
+    return { ok, total: all.length };
+  }, () => { $$(".chip", root).forEach(c => $(`.zone[data-cat="${c.dataset.cat}"]`, root).appendChild(c)); });
+}
+
+/* ===================== Aufgabentyp: Reihenfolge ===================== */
+function renderOrder(st) {
+  let items = st.schritte.map((t, i) => ({ t, i }));
+  do { items = shuffle(items); } while (items.every((x, k) => x.i === k));
+  const lis = items.map(x => `<li class="oitem" data-i="${x.i}"><span class="grip" aria-label="Ziehen">⠿</span><span class="otext">${esc(x.t)}</span><span class="oarrows"><button class="ob" data-d="-1" aria-label="nach oben">▲</button><button class="ob" data-d="1" aria-label="nach unten">▼</button></span></li>`).join("");
+  app.innerHTML = frame(st, `<ol class="olist">${lis}</ol>`, actionsStd());
+  const list = $(".olist");
+  const unmark = () => $$(".oitem", list).forEach(li => li.classList.remove("ok", "bad"));
+  list.addEventListener("click", e => {
+    const b = e.target.closest(".ob"); if (!b) return;
+    const li = b.closest(".oitem");
+    if (+b.dataset.d < 0 && li.previousElementSibling) list.insertBefore(li, li.previousElementSibling);
+    else if (+b.dataset.d > 0 && li.nextElementSibling) list.insertBefore(li.nextElementSibling, li);
+    unmark();
+  });
+  list.addEventListener("pointerdown", e => {
+    const g = e.target.closest(".grip"); if (!g) return;
+    e.preventDefault();
+    const li = g.closest(".oitem"); const r = li.getBoundingClientRect();
+    const ph = document.createElement("li"); ph.className = "oplace"; ph.style.height = r.height + "px";
+    list.insertBefore(ph, li);
+    li.style.width = r.width + "px"; li.style.left = r.left + "px"; li.style.top = r.top + "px";
+    li.classList.add("dragging"); document.body.appendChild(li); document.body.classList.add("nosel"); unmark();
+    const dy = e.clientY - r.top;
+    const drop = () => { activeDrag = null; li.classList.remove("dragging"); li.style.cssText = ""; list.insertBefore(li, ph); ph.remove(); document.body.classList.remove("nosel"); };
+    activeDrag = {
+      move(ev) {
+        li.style.top = (ev.clientY - dy) + "px";
+        let before = null;
+        for (const s of list.children) { if (s === ph) continue; const rr = s.getBoundingClientRect(); if (ev.clientY < rr.top + rr.height / 2) { before = s; break; } }
+        if (before) { if (ph.nextElementSibling !== before) list.insertBefore(ph, before); }
+        else if (list.lastElementChild !== ph) list.appendChild(ph);
+        if (ev.clientY < 80) window.scrollBy(0, -12); else if (ev.clientY > innerHeight - 80) window.scrollBy(0, 12);
+      },
+      up: drop, cancel: drop
+    };
+  });
+  bindStd(st, () => {
+    let ok = 0; const lis = $$(".oitem", list);
+    lis.forEach((li, k) => { const g = +li.dataset.i === k; li.classList.toggle("ok", g); li.classList.toggle("bad", !g); if (g) ok++; });
+    return { ok, total: lis.length };
+  }, () => { $$(".oitem", list).sort((a, b) => a.dataset.i - b.dataset.i).forEach(li => list.appendChild(li)); });
+}
+
+/* ===================== Aufgabentyp: Richtig/Falsch ===================== */
+function renderTF(st) {
+  const items = shuffle(st.aussagen);
+  const ans = new Array(items.length).fill(null);
+  const rows = items.map((s, k) => `<div class="tf" data-k="${k}"><div class="tf-q">${esc(s.t)}</div><div class="tf-btns"><button class="tfb" data-v="1">richtig</button><button class="tfb" data-v="0">falsch</button></div><div class="tf-exp" hidden></div></div>`).join("");
+  app.innerHTML = frame(st, `<div class="tflist">${rows}</div>`, actionsStd());
+  const root = $(".tflist");
+  const setAns = (k, v) => { ans[k] = v; const row = $(`.tf[data-k="${k}"]`, root); $$(".tfb", row).forEach(b => b.classList.toggle("on", +b.dataset.v === v)); row.classList.remove("ok", "bad"); };
+  root.addEventListener("click", e => { const b = e.target.closest(".tfb"); if (!b) return; setAns(+b.closest(".tf").dataset.k, +b.dataset.v); });
+  bindStd(st, () => {
+    const open = ans.filter(a => a === null).length;
+    if (open) return { incomplete: `Es ${open === 1 ? "fehlt noch eine Antwort" : `fehlen noch ${open} Antworten`}.` };
+    let ok = 0;
+    items.forEach((s, k) => {
+      const row = $(`.tf[data-k="${k}"]`, root); const g = ans[k] === (s.r ? 1 : 0);
+      row.classList.toggle("ok", g); row.classList.toggle("bad", !g); if (g) ok++;
+      const ex = $(".tf-exp", row); ex.hidden = false; ex.innerHTML = `<b>${s.r ? "Richtig" : "Falsch"}:</b> ${esc(s.e)}`;
+    });
+    return { ok, total: items.length };
+  }, () => items.forEach((s, k) => setAns(k, s.r ? 1 : 0)));
+}
+
+/* ===================== Übungsrunden (zufällig erzeugt) ===================== */
+function renderRounds(st, makeRound) {
+  const n = st.runden; let k = 0, firstOk = 0;
+  const next = () => {
+    if (k >= n) {
+      const pct = Math.round(100 * firstOk / n); record(st.id, pct);
+      app.innerHTML = frame(st, `<div class="card donebox"><div class="big">${firstOk} / ${n}</div><p>Aufgaben im ersten Versuch richtig gelöst (${pct} %).</p></div>`,
+        `<button class="btn" data-act="open" data-id="${st.id}">Neue Aufgaben</button>${nextHTML(st)}`);
+      window.scrollTo(0, 0); return;
+    }
+    k++;
+    const R = makeRound(); let first = true;
+    app.innerHTML = frame(st, `<div class="roundinfo">Aufgabe ${k} von ${n}</div>${R.html}`,
+      `<button class="btn" id="solve" hidden>Lösung zeigen</button><button class="btn primary" id="check">Prüfen</button><button class="btn primary" id="nextr" hidden>${k < n ? "Nächste Aufgabe ›" : "Auswertung ›"}</button>`);
+    R.mount($(".st-body"));
+    const finish = () => { $("#check").hidden = true; $("#solve").hidden = true; $("#nextr").hidden = false; };
+    $("#check").onclick = () => {
+      const r = R.check();
+      if (r.state === "incomplete") { feedback(r.msg, "info"); return; }
+      if (first) { first = false; if (r.state === "ok" && !R.penalty) firstOk++; }
+      if (r.state === "ok") { feedback("✓ Richtig! " + (r.msg || ""), "ok"); finish(); }
+      else { feedback(r.msg || "Noch nicht ganz – überprüfe die markierten Stellen.", "bad"); $("#solve").hidden = false; }
+    };
+    $("#solve").onclick = () => { R.solve(); feedback("Lösung eingeblendet. " + (R.explain ? R.explain() : ""), "info"); finish(); };
+    $("#nextr").onclick = () => { window.scrollTo(0, 0); next(); };
+  };
+  next();
+}
+
+/* --- DNA → mRNA --- */
+function roundTranscribe() {
+  const n = 12, comp = { A: "T", T: "A", G: "C", C: "G" };
+  let coding = ""; for (let i = 0; i < n; i++) coding += pick("ACGT");
+  const codogen = Math.random() < 0.65;
+  const given = codogen ? [...coding].map(b => comp[b]).join("") : coding;
+  const target = coding.replace(/T/g, "U");
+  const ends = codogen ? ["3'", "5'"] : ["5'", "3'"];
+  let inp = [], body;
+  const draw = () => $$(".slot", body).forEach((s, i) => { s.textContent = inp[i] || ""; s.classList.toggle("filled", !!inp[i]); s.classList.toggle("cur", i === inp.length); s.classList.remove("ok", "bad"); });
+  return {
+    html: `<p class="task">Gegeben ist der <b>${codogen ? "codogene Strang (Matrizenstrang)" : "codierende Strang (Nicht-Matrizenstrang)"}</b>. Gib die mRNA an, die bei der Transkription dieses Abschnitts entsteht.</p>
+      <div class="seqrow"><span class="lbl">DNA</span><span class="end">${ends[0]}</span>${[...given].map(b => `<span class="nt dna">${b}</span>`).join("")}<span class="end">${ends[1]}</span></div>
+      <div class="seqrow"><span class="lbl">mRNA</span><span class="end">5'</span>${Array.from({ length: n }, (_, i) => `<span class="nt slot" data-i="${i}"></span>`).join("")}<span class="end">3'</span></div>
+      <div class="keys">${["A", "U", "G", "C", "T"].map(b => `<button class="key" data-b="${b}">${b}</button>`).join("")}<button class="key wide" data-b="del" aria-label="Löschen">⌫</button></div>`,
+    mount(b) { body = b; $(".keys", b).addEventListener("click", e => { const k = e.target.closest(".key"); if (!k) return; if (k.dataset.b === "del") inp.pop(); else if (inp.length < n) inp.push(k.dataset.b); draw(); }); draw(); },
+    check() {
+      if (inp.length < n) return { state: "incomplete", msg: `Es fehlen noch ${n - inp.length} Basen.` };
+      let ok = true;
+      $$(".slot", body).forEach((s, i) => { const g = inp[i] === target[i]; s.classList.toggle("ok", g); s.classList.toggle("bad", !g); if (!g) ok = false; });
+      if (ok) return { state: "ok" };
+      let msg = "Einige Basen stimmen nicht.";
+      msg += inp.includes("T") ? " Hinweis: RNA enthält kein Thymin." : codogen ? " Tipp: Die mRNA ist komplementär zum codogenen Strang." : " Tipp: Die mRNA entspricht dem codierenden Strang – nur mit U statt T.";
+      return { state: "bad", msg };
+    },
+    solve() { inp = [...target]; draw(); $$(".slot", body).forEach(s => s.classList.add("ok")); }
+  };
+}
+
+/* ===================== Seiten ===================== */
+function stats() {
+  const done = STATIONS.filter(s => progress[s.id]).length;
+  const avg = Math.round(STATIONS.reduce((a, s) => a + (progress[s.id] ? progress[s.id].best : 0), 0) / STATIONS.length);
+  return { done, avg };
+}
+function renderHome() {
+  renderTopbar(); window.scrollTo(0, 0);
+  const { done, avg } = stats();
+  let h = `<div class="hero"><div><h1>Lernstationen</h1><p class="muted">${esc(CONFIG.untertitel)}</p><p class="muted">${done} von ${STATIONS.length} Stationen bearbeitet · Durchschnitt: ${avg} %</p></div><button class="btn" data-act="report">Ergebnisübersicht</button></div>
+    <div class="pbar"><i style="width:${done / STATIONS.length * 100}%"></i></div>`;
+  [...new Set(STATIONS.map(s => s.gruppe))].forEach(g => {
+    h += `<div class="group">${esc(g)}</div><div class="tiles">`;
+    STATIONS.filter(s => s.gruppe === g).forEach(s => {
+      const p = progress[s.id];
+      h += `<button class="tile${p && p.best === 100 ? " done" : ""}" data-act="open" data-id="${s.id}"><span class="ty">${TYPNAME[s.typ]}</span><span class="tt">${esc(s.titel)}</span><span class="ts">${p ? `<span class="badge${p.best === 100 ? " ok" : ""}">Bestes: ${p.best} %</span> · ${p.runs}× bearbeitet` : "noch offen"}</span></button>`;
+    });
+    h += `</div>`;
+  });
+  app.innerHTML = h;
+}
+function copyText(t) {
+  if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+  return new Promise((res, rej) => { const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy") ? res() : rej(); } catch (e) { rej(e); } ta.remove(); });
+}
+function renderReport() {
+  renderTopbar(); window.scrollTo(0, 0);
+  const { done, avg } = stats(); const now = new Date().toLocaleString("de-DE");
+  const rows = STATIONS.map(s => { const p = progress[s.id]; return `<tr><td>${esc(s.titel)}</td><td>${p ? p.first + " %" : "–"}</td><td>${p ? p.best + " %" : "–"}</td><td>${p ? p.runs : 0}</td></tr>`; }).join("");
+  app.innerHTML = `<div class="st-head noprint"><button class="btn ghost" data-act="home">‹ Übersicht</button></div>
+    <div class="card"><h2>Ergebnisübersicht</h2>
+    <p class="muted small">${esc(CONFIG.titel)} · ${esc(CONFIG.untertitel)} · Stand: ${now}</p>
+    <table class="rtable"><thead><tr><th>Station</th><th>1. Durchgang</th><th>Bester</th><th>Anzahl</th></tr></thead><tbody>${rows}</tbody></table>
+    <p>Bearbeitet: ${done}/${STATIONS.length} · Durchschnitt der besten Durchgänge (offene Stationen = 0 %): <b>${avg} %</b></p></div>
+    <div class="feedback" id="fb"></div>
+    <div class="actions"><button class="btn" data-act="reset-all">Fortschritt löschen</button><button class="btn" id="copy">Als Text kopieren</button><button class="btn primary" id="print">Drucken / PDF</button></div>`;
+  $("#print").onclick = () => window.print();
+  $("#copy").onclick = () => {
+    const txt = [`${CONFIG.titel} – Ergebnis`, `Stand: ${now}`, "",
+      ...STATIONS.map(s => { const p = progress[s.id]; return `${s.titel}: ${p ? `1. Durchgang ${p.first} %, bester ${p.best} %, ${p.runs}×` : "offen"}`; }),
+      "", `Bearbeitet: ${done}/${STATIONS.length} · Durchschnitt: ${avg} %`].join("\n");
+    copyText(txt).then(() => feedback("Kopiert – du kannst den Text jetzt z. B. in eine Nachricht einfügen.", "ok"), () => feedback("Kopieren war nicht möglich – mach stattdessen einen Screenshot.", "bad"));
+  };
+}
+
+/* ===================== Start ===================== */
+renderHome();
+</script>
+</body>
+</html>
