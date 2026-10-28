@@ -97,6 +97,8 @@ main{max-width:1080px;margin:0 auto;padding:16px max(16px,env(safe-area-inset-le
 .oitem{display:flex;align-items:center;gap:8px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:8px;counter-increment:o}
 .oitem::before{content:counter(o);flex:none;width:28px;height:28px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
 .oitem.dragging::before{visibility:hidden}
+.oitem.dragging{counter-increment:none}
+.oplace{counter-increment:o}
 .grip{flex:none;width:46px;height:46px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#64748b;touch-action:none;cursor:grab;border-radius:10px;background:#f1f5f9;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .otext{flex:1;font-size:16px}
 .oarrows{display:flex;flex-direction:column;gap:4px}
@@ -337,6 +339,7 @@ function frame(st, body, actions) {
   <div class="actions">${actions}</div>`;
 }
 function openStation(id) {
+  resetDrag();
   const st = STATIONS.find(s => s.id === id); if (!st) return renderHome();
   window.scrollTo(0, 0);
   ({ label: renderLabel, match: renderMatch, sort: renderSort, order: renderOrder, tf: renderTF,
@@ -352,10 +355,21 @@ document.addEventListener("click", e => {
 });
 
 /* ===================== Ziehen & Ablegen (Touch + Maus) ===================== */
+// Es gibt immer höchstens EINEN Ziehvorgang. Weitere Finger werden ignoriert,
+// und alle Zieh-Hilfselemente liegen innerhalb der Übung (#app), sodass sie beim
+// Wechsel der Übung automatisch mit verschwinden.
 let activeDrag = null;
-window.addEventListener("pointermove", e => { if (activeDrag) { e.preventDefault(); activeDrag.move(e); } }, { passive: false });
-window.addEventListener("pointerup", e => { if (activeDrag) activeDrag.up(e); });
-window.addEventListener("pointercancel", e => { if (activeDrag) activeDrag.cancel(e); });
+const isMine = e => activeDrag && e.pointerId === activeDrag.pid;
+window.addEventListener("pointermove", e => { if (isMine(e)) { e.preventDefault(); activeDrag.move(e); } }, { passive: false });
+window.addEventListener("pointerup", e => { if (isMine(e)) activeDrag.up(e); });
+window.addEventListener("pointercancel", e => { if (isMine(e)) activeDrag.cancel(e); });
+function resetDrag() {
+  if (activeDrag) { try { activeDrag.cancel(); } catch (e) {} activeDrag = null; }
+  document.body.classList.remove("nosel");
+  $$("body > .ghost, body > .oitem").forEach(el => el.remove()); // Sicherheitsnetz
+}
+document.addEventListener("visibilitychange", () => { if (document.hidden) resetDrag(); });
+window.addEventListener("blur", resetDrag);
 
 function setupDnD(root) {
   let sel = null;
@@ -376,14 +390,16 @@ function setupDnD(root) {
   root.addEventListener("pointerdown", e => {
     const chip = e.target.closest(".chip"); if (!chip || !root.contains(chip)) return;
     e.preventDefault();
+    if (activeDrag) return;
     const x0 = e.clientX, y0 = e.clientY; let ghost = null, over = null;
     const clearOver = () => { if (over) over.classList.remove("over"); over = null; };
     activeDrag = {
+      pid: e.pointerId,
       move(ev) {
         if (!ghost) {
           if (Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
           ghost = chip.cloneNode(true); ghost.classList.add("ghost"); ghost.classList.remove("selected", "ok", "bad");
-          ghost.style.width = chip.getBoundingClientRect().width + "px"; document.body.appendChild(ghost);
+          ghost.style.width = chip.getBoundingClientRect().width + "px"; root.appendChild(ghost);
           chip.classList.add("lifted"); select(null); document.body.classList.add("nosel");
         }
         ghost.style.left = ev.clientX + "px"; ghost.style.top = ev.clientY + "px";
@@ -488,20 +504,22 @@ function renderOrder(st) {
   list.addEventListener("pointerdown", e => {
     const g = e.target.closest(".grip"); if (!g) return;
     e.preventDefault();
+    if (activeDrag) return;
     const li = g.closest(".oitem"); const r = li.getBoundingClientRect();
     const ph = document.createElement("li"); ph.className = "oplace"; ph.style.height = r.height + "px";
     list.insertBefore(ph, li);
     li.style.width = r.width + "px"; li.style.left = r.left + "px"; li.style.top = r.top + "px";
-    li.classList.add("dragging"); document.body.appendChild(li); document.body.classList.add("nosel"); unmark();
+    li.classList.add("dragging"); list.appendChild(li); document.body.classList.add("nosel"); unmark();
     const dy = e.clientY - r.top;
-    const drop = () => { activeDrag = null; li.classList.remove("dragging"); li.style.cssText = ""; list.insertBefore(li, ph); ph.remove(); document.body.classList.remove("nosel"); };
+    const drop = () => { activeDrag = null; li.classList.remove("dragging"); li.style.cssText = ""; if (ph.parentNode) { list.insertBefore(li, ph); ph.remove(); } document.body.classList.remove("nosel"); };
     activeDrag = {
+      pid: e.pointerId,
       move(ev) {
         li.style.top = (ev.clientY - dy) + "px";
         let before = null;
-        for (const s of list.children) { if (s === ph) continue; const rr = s.getBoundingClientRect(); if (ev.clientY < rr.top + rr.height / 2) { before = s; break; } }
+        for (const s of list.children) { if (s === ph || s === li) continue; const rr = s.getBoundingClientRect(); if (ev.clientY < rr.top + rr.height / 2) { before = s; break; } }
         if (before) { if (ph.nextElementSibling !== before) list.insertBefore(ph, before); }
-        else if (list.lastElementChild !== ph) list.appendChild(ph);
+        else if (li.previousElementSibling !== ph) list.insertBefore(ph, li); // gezogenes Element liegt am Listenende
         if (ev.clientY < 80) window.scrollBy(0, -12); else if (ev.clientY > innerHeight - 80) window.scrollBy(0, 12);
       },
       up: drop, cancel: drop
@@ -601,7 +619,7 @@ function stats() {
   return { done, avg };
 }
 function renderHome() {
-  renderTopbar(); window.scrollTo(0, 0);
+  resetDrag(); renderTopbar(); window.scrollTo(0, 0);
   const { done, avg } = stats();
   let h = `<div class="hero"><div><h1>Lernstationen</h1><p class="muted">${esc(CONFIG.untertitel)}</p><p class="muted">${done} von ${STATIONS.length} Stationen bearbeitet · Durchschnitt: ${avg} %</p></div><button class="btn" data-act="report">Ergebnisübersicht</button></div>
     <div class="pbar"><i style="width:${done / STATIONS.length * 100}%"></i></div>`;
@@ -620,7 +638,7 @@ function copyText(t) {
   return new Promise((res, rej) => { const ta = document.createElement("textarea"); ta.value = t; ta.style.position = "fixed"; ta.style.opacity = "0"; document.body.appendChild(ta); ta.select(); try { document.execCommand("copy") ? res() : rej(); } catch (e) { rej(e); } ta.remove(); });
 }
 function renderReport() {
-  renderTopbar(); window.scrollTo(0, 0);
+  resetDrag(); renderTopbar(); window.scrollTo(0, 0);
   const { done, avg } = stats(); const now = new Date().toLocaleString("de-DE");
   const rows = STATIONS.map(s => { const p = progress[s.id]; return `<tr><td>${esc(s.titel)}</td><td>${p ? p.first + " %" : "–"}</td><td>${p ? p.best + " %" : "–"}</td><td>${p ? p.runs : 0}</td></tr>`; }).join("");
   app.innerHTML = `<div class="st-head noprint"><button class="btn ghost" data-act="home">‹ Übersicht</button></div>
